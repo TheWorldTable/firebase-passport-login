@@ -1,10 +1,10 @@
 exports.setup = function (passport, config) {
-    var LinkedInStrategy = require('passport-linkedin').Strategy;
+    var TrelloStrategy = require('passport-trello').Strategy;
 
-    passport.use(new LinkedInStrategy({
-        consumerKey: config.LINKEDIN_CLIENT_ID,
-        consumerSecret: config.LINKEDIN_CLIENT_SECRET,
-        callbackURL: config.LINKEDIN_CALLBACK_URL
+    passport.use(new TrelloStrategy({
+        clientID: config.TRELLO_CLIENT_ID,
+        clientSecret: config.TRELLO_CLIENT_SECRET,
+        callbackURL: config.TRELLO_CALLBACK_URL
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
@@ -25,4 +25,4 @@ exports.setup = function (passport, config) {
             "state": "_____"
         }
     };
-}
+};

@@ -1,5 +1,4 @@
-exports.setup = function (passport) {
-    var config = require('./config');
+exports.setup = function (passport,config) {
     var RedditStrategy = require('passport-reddit').Strategy;
 
     passport.use(new RedditStrategy({
@@ -15,7 +14,7 @@ exports.setup = function (passport) {
                 id: profile.id,
                 uid: profile.provider + ':' + profile.id,
                 displayName: profile.name,
-                thirdPartyUserData: profile._json  
+                thirdPartyUserData: profile._json
             };
             return done(0, user);
       }
@@ -26,4 +25,4 @@ exports.setup = function (passport) {
             "state": "_____"
         }
     };
-}
+};

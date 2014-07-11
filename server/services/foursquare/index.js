@@ -1,5 +1,4 @@
-exports.setup = function (passport) {
-    var config = require('./config');
+exports.setup = function (passport, config) {
     var FoursquareStrategy = require('passport-foursquare').Strategy;
 
     passport.use(new FoursquareStrategy({
@@ -15,7 +14,7 @@ exports.setup = function (passport) {
                 id: profile.id,
                 uid: profile.provider + ':' + profile.id,
                 displayName: profile.name.givenName + ' ' + profile.name.familyName,
-                thirdPartyUserData: profile._json  
+                thirdPartyUserData: profile._json
             };
             return done(0, user);
       }
@@ -25,4 +24,4 @@ exports.setup = function (passport) {
         options: {
         }
     };
-}
+};

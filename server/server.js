@@ -1,46 +1,54 @@
 var http = require('http');
 var express = require('express');
 var passport = require('passport');
-var serverConfig = require('./config');
 var TokenGenerator = require('firebase-token-generator');
 var Firebase = require('firebase');
-var app = express();
+var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
+var session = require('express-session');
 
-app.configure(function() {
-    //app.use(express.static('public'));
-    app.use(express.cookieParser(serverConfig.COOKIE_SECRET));
-    app.use(express.bodyParser());
-    app.use(express.session({ secret: serverConfig.COOKIE_SECRET }));
-    app.use(passport.initialize());
-    app.use(passport.session());
-    app.use(app.router);
-});
+module.exports = function(config){
+  var serverConfig = config;
 
-var tokGen = new FirebaseTokenGenerator(serverConfig.FIREBASE_SECRET);
-var port = Number(process.env.PORT || 5000);
+  var router = express.Router(["strict"]);
+      router.use(cookieParser(serverConfig.COOKIE_SECRET));
+      router.use(bodyParser());
+      router.use(session({ secret: serverConfig.COOKIE_SECRET }));
+      router.use(passport.initialize());
+      router.use(passport.session());
 
-serverConfig.SERVICES.forEach(function (service) {
-    var serviceObject = require('./services/' + service).setup(passport);
+  var tokGen = new FirebaseTokenGenerator(serverConfig.FIREBASE_SECRET);
+  serverConfig.SERVICES.forEach(function (service) {
+      var serviceObject = require('./services/' + service).setup(passport, serverConfig[service]);
 
-    app.get('/auth/' + service, function(req, res, next){
-        res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
-        passport.authenticate(service, serviceObject.options)(req, res, next);
-    });
+      router.get('/' + service, function(req, res, next){
+          res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
+          passport.authenticate(service, serviceObject.options)(req, res, next);
+      });
 
-    app.get('/auth/' + service + '/callback', function (req, res, next) {
-        var ref = new Firebase(serverConfig.FIREBASE_URL)
-        passport.authenticate(service, function(err, user, info) {
-            ref.auth(serverConfig.FIREBASE_SECRET, function (err, data) {
-                ref.child('oAuthToken').child(user.uid).set(user.accessToken)
-                var tok = null;
-                if( user ) {
-                    tok = tokGen.createToken(user);
-                }
+      router.get('/'+service+'/callback', function (req, res, next) {
+          var ref = new Firebase(serverConfig.FIREBASE_URL);
+          passport.authenticate(service, function(err, user, info) {
+              if (err){
+                res.write("errored");
+                return;
+              }
 
-                ref.child(req.signedCookies.passportAnonymous).set(tok);
-            })
-        })(req, res, next);
-    });
-});
+              ref.auth(serverConfig.FIREBASE_SECRET, function (err, data) {
+                  if (err){
+                    res.write("errored");
+                    return;
+                  }
+                  ref.child('oAuthLogin').child(user.uid).set(user.accessToken);
+                  var tok = null;
+                  if( user ) {
+                      tok = tokGen.createToken(user);
+                  }
 
-app.listen(port);
+                  ref.child(req.signedCookies.passportAnonymous).set(tok);
+              });
+          })(req, res, next);
+      });
+  });
+  return router;
+};
