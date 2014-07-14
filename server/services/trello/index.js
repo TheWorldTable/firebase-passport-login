@@ -2,8 +2,8 @@ exports.setup = function (passport, config) {
     var TrelloStrategy = require('passport-trello').Strategy;
 
     passport.use(new TrelloStrategy({
-        clientID: config.TRELLO_CLIENT_ID,
-        clientSecret: config.TRELLO_CLIENT_SECRET,
+        consumerKey: config.TRELLO_CLIENT_ID,
+        consumerSecret: config.TRELLO_CLIENT_SECRET,
         callbackURL: config.TRELLO_CALLBACK_URL
       },
       function(accessToken, refreshToken, profile, done) {
