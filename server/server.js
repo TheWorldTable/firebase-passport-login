@@ -39,7 +39,7 @@ module.exports = function(config){
                     res.write("errored");
                     return;
                   }
-                  ref.child('oAuthLogin').child(user.uid).set(user.accessToken);
+                  ref.child('user').child(user.uid).set({accessToken: user.accessToken});
                   var tok = null;
                   if( user ) {
                       tok = tokGen.createToken(user);
