@@ -39,7 +39,7 @@ module.exports = function(config){
                     res.write("errored");
                     return;
                   }
-                  ref.child('users').child(user.uid).set({accessToken: user.accessToken});
+                  ref.child('users').child(user.uid).set({accessToken: user.accessToken, provider: service});
                   var tok = null;
                   if( user ) {
                       tok = tokGen.createToken(user);
