@@ -2,7 +2,7 @@
 var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     var self = this;
     self._ref = ref;
-    self._tokenPath = "user";
+    self._tokenPath = "users";
     self._oAuthServerURL = oAuthServerURL;
     self._oAuthServerWindow = "width=1024, height=650";
     self._callback = callback;
