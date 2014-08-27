@@ -4,7 +4,8 @@ exports.setup = function (passport, config) {
     passport.use(new GitHubStrategy({
         clientID: config.GITHUB_CLIENT_ID,
         clientSecret: config.GITHUB_CLIENT_SECRET,
-        callbackURL: config.GITHUB_CALLBACK_URL
+        callbackURL: config.GITHUB_CALLBACK_URL,
+        scope: config.GITHUB_SCOPE 
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
