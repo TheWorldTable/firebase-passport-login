@@ -30,13 +30,17 @@ module.exports = function(config){
           var ref = new Firebase(serverConfig.FIREBASE_URL);
           passport.authenticate(service, function(err, user, info) {
               if (err){
-                res.write("errored");
+                next(err);
+                return;
+              }
+              if(!user){
+                next("not authed");
                 return;
               }
 
               ref.auth(serverConfig.FIREBASE_SECRET, function (err, data) {
                   if (err){
-                    res.write("errored");
+                    next(err);
                     return;
                   }
                   ref.child('users').child(user.uid).set({accessToken: user.accessToken, provider: service});
@@ -46,6 +50,7 @@ module.exports = function(config){
                   }
 
                   ref.child(req.signedCookies.passportAnonymous).set(tok);
+                  next();
               });
           })(req, res, next);
       });
