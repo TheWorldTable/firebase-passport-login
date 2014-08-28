@@ -5,7 +5,9 @@ exports.setup = function (passport, config) {
         clientID: config.STACK_CLIENT_ID,
         clientSecret: config.STACK_CLIENT_SECRET,
         callbackURL: config.STACK_CALLBACK_URL,
-        scope: config.STACK_SCOPE 
+        scope: config.STACK_SCOPE,
+        authorizationURL: config.authorizationURL,
+        tokenURL: config.tokenURL
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
