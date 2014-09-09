@@ -7,7 +7,8 @@ exports.setup = function (passport, config) {
         callbackURL: config.STACK_CALLBACK_URL,
         scope: config.STACK_SCOPE,
         authorizationURL: config.authorizationURL,
-        tokenURL: config.tokenURL
+        tokenURL: config.tokenURL,
+        userProfileURL: config.userProfileURL
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
