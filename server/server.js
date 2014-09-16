@@ -49,7 +49,7 @@ module.exports = function(config){
 
                   ref.child('users').child(user.uid).set({accessToken: user.accessToken, provider: service});
                   //see if user already has account
-                  if(ref.child('users').child(user.uid).hasChild('accountId')){
+                  if(ref.child('users').child(user.uid) && ref.child('users').child(user.uid).child('accountId')){
                     var accountId = ref.child('users').child(user.uid).child('accountId').val();
                     var accountRef = ref.child('accounts').child(accountId);
                   } else {
