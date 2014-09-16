@@ -46,7 +46,27 @@ module.exports = function(config){
                     next(err);
                     return;
                   }
+
                   ref.child('users').child(user.uid).set({accessToken: user.accessToken, provider: service});
+                  //see if user already has account
+                  if(ref.child('users').child(user.uid).hasChild('accountId')){
+                    var accountId = ref.child('users').child(user.uid).child('accountId').val();
+                    var accountRef = ref.child('accounts').child(accountId);
+                  } else {
+                    //check if person has already logged in as a user that has an account
+                    if(req.signedCookies.accountId){
+                        var accountRef = ref.child('accounts').push({users: users});
+                        ref.child('users').child(user.uid).child('accountId').set(accountRef.name());
+                    } else {
+                      //create account
+                      users[user.id] = true;
+                      var accountRef = ref.child('accounts').push({users: users});
+                      ref.child('users').child(user.uid).child('accountId').set(accountRef.name());
+                    }
+                  }
+
+                  //set cookie identifying the account for future account additions
+                  res.cookie('accountId', accountRef.name(), {signed: true});
                   var tok = null;
                   if( user ) {
                       tok = tokGen.createToken(user);
