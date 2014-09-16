@@ -6,6 +6,62 @@ var Firebase = require('firebase');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var Promise = require('es6-promise').Promise;
+
+function OnceValuePromise(ref){
+  var p = new Promise(function(resolve, reject){
+    ref.once('value', function success(snapshot){
+      var pp = snapshot.val();
+      if(pp){
+        resolve(snapshot);
+      } else {
+        reject("non existant value");
+      }
+    }, function failure(error){
+        reject(error);
+    });
+  });
+  return p;
+}
+
+function SetPromise(ref, value){
+  var p = new Promise(function(resolve, reject){
+    ref.set(value, function callback(error){
+      if(error){
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+  return p;
+}
+
+function UpdatePromise(ref, value){
+  var p = new Promise(function(resolve, reject){
+    ref.update(value, function callback(error){
+      if(error){
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+  return p;
+}
+
+function PushPromise(ref, value){
+  var p = new Promise(function(resolve, reject){
+    var newRef = ref.push(value, function callback(error){
+      if(error){
+        reject(error);
+        return;
+      }
+      resolve(newRef);
+    });
+  });
+  return p;
+}
 
 module.exports = function(config){
   var serverConfig = config;
@@ -47,34 +103,43 @@ module.exports = function(config){
                     return;
                   }
 
-                  ref.child('users').child(user.uid).set({accessToken: user.accessToken, provider: service});
-                  //see if user already has account
-                  if(ref.child('users').child(user.uid) && ref.child('users').child(user.uid).child('accountId')){
-                    var accountId = ref.child('users').child(user.uid).child('accountId').val();
-                    var accountRef = ref.child('accounts').child(accountId);
+                  var userUpdate = null;
+                  var accountRef = null;
+                  if(req.signedCookies.accountId){
+                    accountRef = req.signedCookies.accountId;
                   } else {
-                    //check if person has already logged in as a user that has an account
-                    if(req.signedCookies.accountId){
-                        var accountRef = ref.child('accounts').push({users: users});
-                        ref.child('users').child(user.uid).child('accountId').set(accountRef.name());
-                    } else {
-                      //create account
-                      users[user.id] = true;
-                      var accountRef = ref.child('accounts').push({users: users});
-                      ref.child('users').child(user.uid).child('accountId').set(accountRef.name());
-                    }
+                    users = {};
+                    users[user.uid] = true;
+                    accountRef = ref.child('accounts').push({users: users}).name();
                   }
 
-                  //set cookie identifying the account for future account additions
-                  res.cookie('accountId', accountRef.name(), {signed: true});
-                  var tok = null;
-                  if( user ) {
-                      tok = tokGen.createToken(user);
-                  }
+                  userUpdate = UpdatePromise(ref.child('users').child(user.uid),{accessToken: user.accessToken, provider: service, accountId: accountRef});
 
-                  ref.child(req.signedCookies.passportAnonymous).set(tok);
-                  console.log("successfully signed in user");
-                  next("success");
+                  userUpdate
+                  .catch(function(error){
+                    next("failure: "+error);
+                  })
+                  .then(function(){
+                      return SetPromise(ref.child('accounts').child(accountRef).child('users').child(user.uid),true);
+                  })
+                  .then(function(){
+                      res.cookie('accountId', accountRef, {signed: true});
+                      var tok = null;
+                      if( user ) {
+                          tok = tokGen.createToken(user);
+                      }
+                      return SetPromise(ref.child(req.signedCookies.passportAnonymous),tok);
+                  })
+                  .catch(function(error){
+                    next("failure: "+error);
+                  })
+                  .then(function(){
+                    console.log("successfully signed in user");
+                    next("success");
+                  });
+
+
+
               });
           })(req, res, next);
       });

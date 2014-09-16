@@ -6,6 +6,7 @@
   "dependencies": {
     "body-parser": "^1.4.3",
     "cookie-parser": "^1.3.2",
+    "es6-promise": "^1.0.0",
     "express": "^4.5.1",
     "express-session": "^1.6.4",
     "firebase": "^1.0.17",
@@ -15,8 +16,8 @@
     "passport-github": "^0.1.5",
     "passport-linkedin": "^0.1.3",
     "passport-reddit": "^0.2.4",
-    "passport-trello": "^0.1.4",
-    "passport-stack": "git://github.com/jessta/passport-stack.git"
+    "passport-stack": "git://github.com/jessta/passport-stack.git",
+    "passport-trello": "^0.1.4"
   },
   "devDependencies": {
     "firebase-token-generator": "~0.1.4",
