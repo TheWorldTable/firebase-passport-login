@@ -138,7 +138,8 @@ module.exports = function(config){
                   res.set({
                     'Content-Type': 'text/html',
                   });
-                  next("<script>window.close();</script>");
+                  res.send("<script>window.close();</script>");
+                  next();
                 })
                 .catch(function(error){
                   console.log("failed to login user:"+ error);
