@@ -97,49 +97,49 @@ module.exports = function(config){
               }
 
               ref.auth(serverConfig.FIREBASE_SECRET, function (err, data) {
-                  if (err){
-                    console.log("error during firebase auth", err);
-                    next(err);
-                    return;
-                  }
+                if (err){
+                  console.log("error during firebase auth", err);
+                  next(err);
+                  return;
+                }
 
-                  var userUpdate = null;
-                  var accountRef = null;
-                  if(req.signedCookies.accountId){
-                    accountRef = req.signedCookies.accountId;
-                  } else {
-                    users = {};
-                    users[user.uid] = true;
-                    accountRef = ref.child('accounts').push({users: users}).name();
-                  }
-
-                  userUpdate = UpdatePromise(ref.child('users').child(user.uid),{accessToken: user.accessToken, provider: service, accountId: accountRef});
-
-                  userUpdate
-                  .catch(function(error){
-                    next("failure: "+error);
-                  })
-                  .then(function(){
-                      return SetPromise(ref.child('accounts').child(accountRef).child('users').child(user.uid),true);
-                  })
-                  .then(function(){
-                      res.cookie('accountId', accountRef, {signed: true});
-                      var tok = null;
-                      if( user ) {
-                          tok = tokGen.createToken(user);
+                var userUpdate = null;
+                var accountRef = null;
+                userUpdate = UpdatePromise(ref.child('users').child(user.uid),{accessToken: user.accessToken, provider: service})
+                .then(function(){
+                  return OnceValuePromise(ref.child('users').child(user.uid)).then(function(userSnapshot){
+                    if(!userSnapshot.val().accountId){
+                      users = {};
+                      users[userSnapshot.name()] = true;
+                      if(req.signedCookies.accountId){
+                        accountRef = req.signedCookies.accountId;
+                      } else {
+                        accountRef = ref.child('accounts').push({users: users}).name();
                       }
-                      return SetPromise(ref.child(req.signedCookies.passportAnonymous),tok);
-                  })
-                  .catch(function(error){
-                    next("failure: "+error);
-                  })
-                  .then(function(){
-                    console.log("successfully signed in user");
-                    next("success");
+                      return UpdatePromise(userSnapshot.ref(), {accountId: accountRef});
+                    }
+                    return Promise.resolve();
                   });
-
-
-
+                })
+                .then(function(){
+                    return SetPromise(ref.child('accounts').child(accountRef).child('users').child(user.uid),true);
+                })
+                .then(function(){
+                    res.cookie('accountId', accountRef, {signed: true});
+                    var tok = null;
+                    if( user ) {
+                        tok = tokGen.createToken(user);
+                    }
+                    return SetPromise(ref.child(req.signedCookies.passportAnonymous),tok);
+                })
+                .then(function(){
+                  console.log("successfully signed in user");
+                  next("<script>window.close();</script>");
+                })
+                .catch(function(error){
+                  console.log("failed to login user:"+ error);
+                  next("failure: "+error);
+                });
               });
           })(req, res, next);
       });
