@@ -135,6 +135,9 @@ module.exports = function(config){
                 })
                 .then(function(){
                   console.log("successfully signed in user");
+                  res.set({
+                    'Content-Type': 'text/html',
+                  });
                   next("<script>window.close();</script>");
                 })
                 .catch(function(error){
