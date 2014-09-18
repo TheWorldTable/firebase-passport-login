@@ -108,7 +108,8 @@ module.exports = function(config){
                 userUpdate = UpdatePromise(ref.child('users').child(user.uid),{accessToken: user.accessToken, provider: service})
                 .then(function(){
                   return OnceValuePromise(ref.child('users').child(user.uid)).then(function(userSnapshot){
-                    if(!userSnapshot.val().accountId){
+                    accountRef = userSnapshot.val().accountId;
+                    if(!accountRef){
                       users = {};
                       users[userSnapshot.name()] = true;
                       if(req.signedCookies.accountId){
