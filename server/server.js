@@ -131,7 +131,7 @@ module.exports = function(config){
                     if( user ) {
                         tok = tokGen.createToken(user);
                     }
-                    return SetPromise(ref.child(req.signedCookies.passportAnonymous),tok);
+                    return SetPromise(ref.child('tokens').child(req.signedCookies.passportAnonymous),tok);
                 })
                 .then(function(){
                   console.log("successfully signed in user");
