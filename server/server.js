@@ -110,7 +110,7 @@ module.exports = function(config){
                   return OnceValuePromise(ref.child('users').child(user.uid)).then(function(userSnapshot){
                     accountRef = userSnapshot.val().accountId;
                     if(!accountRef){
-                      users = {};
+                      var users = {};
                       users[userSnapshot.name()] = true;
                       if(req.signedCookies.accountId){
                         accountRef = req.signedCookies.accountId;
