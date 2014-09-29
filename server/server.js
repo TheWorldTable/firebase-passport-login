@@ -7,6 +7,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var session = require('express-session');
 var Promise = require('es6-promise').Promise;
+var crypto = require('crypto');
 
 function OnceValuePromise(ref){
   var p = new Promise(function(resolve, reject){
@@ -79,11 +80,15 @@ module.exports = function(config){
 
       router.get('/' + service, function(req, res, next){
           res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
+          if(req.query.accountToken && req.query.accountId){
+            res.cookie('accountToken', {token: req.query.accountToken, id: req.query.accountId}, {signed: true});
+          }
           passport.authenticate(service, serviceObject.options)(req, res, next);
       });
 
       router.get('/'+service+'/callback', function (req, res, next) {
           var ref = new Firebase(serverConfig.FIREBASE_URL);
+
           passport.authenticate(service, function(err, user, info) {
               if (err){
                 console.log("error during passport auth:", err);
@@ -112,10 +117,23 @@ module.exports = function(config){
                     if(!accountRef){
                       var users = {};
                       users[userSnapshot.name()] = true;
-                      if(req.signedCookies.accountId){
-                        accountRef = req.signedCookies.accountId;
+                      if(req.signedCookies.accountToken){
+                        var accountInfo = req.signedCookies.accountToken;
+                        return OnceValuePromise(ref.child('accounts').child(accountInfo.id)).then(function(accountSnap){
+                          if(!(accountSnap.accountToken && accountInfo.accountToken)){
+                            throw "unable to login, account token mismatch";
+                          }
+                          if(accountSnap.accountToken != accountInfo.accountToken){
+                            throw "unable to login, account token mismatch";
+                          } else {
+                            accountRef = req.signedCookies.accountId;
+                            return UpdatePromise(userSnapshot.ref(), {accountId: accountRef});
+                          }
+                        });
                       } else {
-                        accountRef = ref.child('accounts').push({users: users}).name();
+                        //generate a token that users can use to identify that they have access to the account
+                        var buf = crypto.randomBytes(256).toString('hex'); // can throw
+                        accountRef = ref.child('accounts').push({users: users, accountToken: buf}).name();
                       }
                       return UpdatePromise(userSnapshot.ref(), {accountId: accountRef});
                     }
