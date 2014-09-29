@@ -122,11 +122,12 @@ module.exports = function(config){
                         if(!accountInfo.id){
                           throw "unable to login, invalid account token";
                         }
+                        console.log("----- add a user to account: "+accountInfo.id);
                         return OnceValuePromise(ref.child('accounts').child(accountInfo.id)).then(function(accountSnap){
-                          if(!(accountSnap.accountToken && accountInfo.accountToken)){
+                          if(!(accountSnap.val().accountToken && accountInfo.accountToken)){
                             throw "unable to login, account token mismatch";
                           }
-                          if(accountSnap.accountToken != accountInfo.accountToken){
+                          if(accountSnap.val().accountToken != accountInfo.accountToken){
                             throw "unable to login, account token mismatch";
                           } else {
                             accountRef = accountInfo.id;
@@ -147,11 +148,11 @@ module.exports = function(config){
                     return SetPromise(ref.child('accounts').child(accountRef).child('users').child(user.uid),true);
                 })
                 .then(function(){
-                    res.cookie('accountId', accountRef, {signed: true});
                     var tok = null;
                     if( user ) {
                         tok = tokGen.createToken(user);
                     }
+
                     return SetPromise(ref.child('tokens').child(req.signedCookies.passportAnonymous),tok);
                 })
                 .then(function(){
@@ -159,10 +160,12 @@ module.exports = function(config){
                   res.set({
                     'Content-Type': 'text/html',
                   });
+                  res.clearCookie('accountToken');
                   res.send("<script>window.close();</script>");
                   next();
                 })
                 .catch(function(error){
+                  res.clearCookie('accountToken');
                   console.log("failed to login user:"+ error);
                   next("failure: "+error);
                 });
