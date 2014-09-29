@@ -119,6 +119,9 @@ module.exports = function(config){
                       users[userSnapshot.name()] = true;
                       if(req.signedCookies.accountToken){
                         var accountInfo = req.signedCookies.accountToken;
+                        if(!accountInfo.id){
+                          throw "unable to login, invalid account token";
+                        }
                         return OnceValuePromise(ref.child('accounts').child(accountInfo.id)).then(function(accountSnap){
                           if(!(accountSnap.accountToken && accountInfo.accountToken)){
                             throw "unable to login, account token mismatch";
@@ -126,7 +129,7 @@ module.exports = function(config){
                           if(accountSnap.accountToken != accountInfo.accountToken){
                             throw "unable to login, account token mismatch";
                           } else {
-                            accountRef = req.signedCookies.accountId;
+                            accountRef = accountInfo.id;
                             return UpdatePromise(userSnapshot.ref(), {accountId: accountRef});
                           }
                         });
