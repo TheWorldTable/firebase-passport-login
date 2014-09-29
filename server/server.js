@@ -81,7 +81,7 @@ module.exports = function(config){
       router.get('/' + service, function(req, res, next){
           res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
           if(req.query.accountToken && req.query.accountId){
-            res.cookie('accountToken', {token: req.query.accountToken, id: req.query.accountId}, {signed: true});
+            res.cookie('accountToken', JSON.stringify({token: req.query.accountToken, id: req.query.accountId}), {signed: true});
           }
           passport.authenticate(service, serviceObject.options)(req, res, next);
       });
@@ -118,16 +118,18 @@ module.exports = function(config){
                       var users = {};
                       users[userSnapshot.name()] = true;
                       if(req.signedCookies.accountToken){
-                        var accountInfo = req.signedCookies.accountToken;
+                        var accountInfo = JSON.parse(req.signedCookies.accountToken);
                         if(!accountInfo.id){
                           throw "unable to login, invalid account token";
                         }
                         console.log("----- add a user to account: "+accountInfo.id);
                         return OnceValuePromise(ref.child('accounts').child(accountInfo.id)).then(function(accountSnap){
                           if(!(accountSnap.val().accountToken && accountInfo.accountToken)){
+                            console.log("unable to login, account token mismatch");
                             throw "unable to login, account token mismatch";
                           }
                           if(accountSnap.val().accountToken != accountInfo.accountToken){
+                            console.log("unable to login, account token mismatch");
                             throw "unable to login, account token mismatch";
                           } else {
                             accountRef = accountInfo.id;
