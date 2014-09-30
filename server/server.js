@@ -120,11 +120,13 @@ module.exports = function(config){
                       users[userSnapshot.name()] = true;
                       if(req.signedCookies.accountToken){
                         var accountInfo = JSON.parse(req.signedCookies.accountToken);
+
                         if(!accountInfo.id){
                           throw "unable to login, invalid account token";
                         }
                         console.log("----- add a user to account: "+accountInfo.id);
                         return OnceValuePromise(ref.child('accounts').child(accountInfo.id)).then(function(accountSnap){
+                          console.log("from cookie:", accountInfo);
                           if(!(accountSnap.val().accountToken && accountInfo.accountToken)){
                             console.log("unable to login, account token mismatch");
                             throw "unable to login, account token mismatch";
