@@ -79,6 +79,7 @@ module.exports = function(config){
       var serviceObject = require('./services/' + service).setup(passport, serverConfig[service]);
 
       router.get('/' + service, function(req, res, next){
+          console.log("auth:"+JSON.stringify({token: req.query.accountToken, id: req.query.accountId}));
           res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
           if(req.query.accountToken && req.query.accountId){
             res.cookie('accountToken', JSON.stringify({token: req.query.accountToken, id: req.query.accountId}), {signed: true});
@@ -88,7 +89,7 @@ module.exports = function(config){
 
       router.get('/'+service+'/callback', function (req, res, next) {
           var ref = new Firebase(serverConfig.FIREBASE_URL);
-
+          console.log("auth callback");
           passport.authenticate(service, function(err, user, info) {
               if (err){
                 console.log("error during passport auth:", err);
