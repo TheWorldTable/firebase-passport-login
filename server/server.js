@@ -127,11 +127,12 @@ module.exports = function(config){
                         console.log("----- add a user to account: "+accountInfo.id);
                         return OnceValuePromise(ref.child('accounts').child(accountInfo.id)).then(function(accountSnap){
                           console.log("from cookie:", accountInfo);
-                          if(!(accountSnap.val().accountToken && accountInfo.accountToken)){
+                          console.log("from database:", accountSnap.val());
+                          if(!(accountSnap.val().accountToken && accountInfo.token)){
                             console.log("unable to login, account token mismatch");
                             throw "unable to login, account token mismatch";
                           }
-                          if(accountSnap.val().accountToken != accountInfo.accountToken){
+                          if(accountSnap.val().accountToken != accountInfo.token){
                             console.log("unable to login, account token mismatch");
                             throw "unable to login, account token mismatch";
                           } else {
