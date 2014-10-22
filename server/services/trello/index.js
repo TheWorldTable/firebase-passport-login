@@ -13,7 +13,11 @@ exports.setup = function (passport, config) {
     passport.use(new TrelloStrategy({
         consumerKey: config.TRELLO_CLIENT_ID,
         consumerSecret: config.TRELLO_CLIENT_SECRET,
-        callbackURL: config.TRELLO_CALLBACK_URL
+        callbackURL: config.TRELLO_CALLBACK_URL,
+        trelloParams: {
+          scope: config.TRELLO_SCOPE
+          expiration: "never"
+        }
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
