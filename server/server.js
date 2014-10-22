@@ -111,7 +111,7 @@ module.exports = function(config){
 
                 var userUpdate = null;
                 var accountRef = null;
-                userUpdate = UpdatePromise(ref.child('users').child(user.uid),{displayName: user.displayName, id: user.id, accessToken: user.accessToken, provider: service})
+                userUpdate = UpdatePromise(ref.child('users').child(user.uid),{id: user.id, accessToken: user.accessToken, provider: service})
                 .then(function(){
                   return OnceValuePromise(ref.child('users').child(user.uid)).then(function(userSnapshot){
                     accountRef = userSnapshot.val().accountId;
