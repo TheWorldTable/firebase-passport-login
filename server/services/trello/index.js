@@ -9,13 +9,13 @@ exports.setup = function (passport, config) {
     if(config.TRELLO_CALLBACK_URL.length == 0){
       throw "No trello callback URL";
     }
-    console.log(config); 
+    console.log(config);
     passport.use(new TrelloStrategy({
         consumerKey: config.TRELLO_CLIENT_ID,
         consumerSecret: config.TRELLO_CLIENT_SECRET,
         callbackURL: config.TRELLO_CALLBACK_URL,
         trelloParams: {
-          scope: config.TRELLO_SCOPE
+          scope: config.TRELLO_SCOPE,
           expiration: "never"
         }
       },
