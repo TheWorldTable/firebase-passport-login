@@ -1,5 +1,4 @@
-exports.setup = function(passport) {
-  var config = require('./config');
+exports.setup = function(passport, config) {
   var FacebookStrategy = require('passport-facebook').Strategy;
 
   passport.use(new FacebookStrategy({
