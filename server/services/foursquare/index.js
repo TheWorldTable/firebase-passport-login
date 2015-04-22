@@ -1,5 +1,4 @@
-exports.setup = function (passport) {
-    var config = require('./config');
+exports.setup = function (passport, config) {
     var FoursquareStrategy = require('passport-foursquare').Strategy;
 
     passport.use(new FoursquareStrategy({

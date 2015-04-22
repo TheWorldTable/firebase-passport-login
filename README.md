@@ -44,6 +44,8 @@ If you've used Firebase Simple Login, the next JavaScript snippet will look very
 The only difference between setting up a Simple Login client and a Passport Login client, is that FirebasePassportLogin takes an additional URL parameter, which points to the URL of your authentication server.
     
 ### 5. Configure your Server
+
+
 The FPL server has two kinds of config files. The server config file, located at `/server/config.js` and service specific config files located at `/server/services/*/config.js`. These files are self-explanatory and require basic informaiton like which services to load, your Firebase URL, your Firebase Secret, and your oAuth Key/Secret for each service.
     
 ### 6. Start your Server

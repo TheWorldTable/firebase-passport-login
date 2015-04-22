@@ -7,37 +7,17 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     self._oAuthServerWindow = "width=1024, height=650";
     self._callback = callback;
     self._ready = true;
-    
-    self._anonymous_login = function (callback) {
-        var firebaseName = self._ref.toString().match(/https:\/\/(.+)\.firebaseio.com/)[1];
-        var callbackName = "fpl_" + self._ref.push().name().replace(/-/g, '');
-        window[callbackName] = function (data) {
-            self._ref.auth(data.token, function (err, auth) {
-                callback(err, auth.auth);   
-            });
-        };
-        
-        var script = document.createElement('script');
-        var url = "https://auth.firebase.com/auth/anonymous?transport=jsonp&firebase=" + firebaseName + "&callback=" + callbackName;
-        script.setAttribute("type", "text/javascript");
-        script.setAttribute("src", url);
-        
-        document.getElementsByTagName("head")[0].appendChild(script);   
-    }
-    
-    self._handleAnonymousLogin = function (error, user) {
-        if (error) {
-            self._log("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
-        }else if (user) {
-            self._anonymous_user = user;
-            self._initializePassportLogin();
-        }
-    };
-    
-    self._initializePassportLogin = function () {
+
+    /**
+     * Set up Firebase listener on the anonymous user. When the anonymous user has been
+     * authenticated through Passport, invoke @link{ _handleOAuthLogin } with the auth token
+     * obtained through Passport.
+     * @private
+     */
+    self._initializePassportLogin = function (anonymousUid) {
         var oAuthTokenPath = [
-            self._tokenPath, 
-            self._anonymous_user.uid
+            self._tokenPath,
+            anonymousUid
         ].join('/');
         var oAuthTokenRef = self._ref.child(oAuthTokenPath);
         
@@ -49,22 +29,24 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
                 self._oAuthWindow.close();
                 self._ref.unauth();
 
-                self._handleOAuthLogin(token);
+                self._setToken(token);
             }
         });
     
         var oAuthWindowURL = self._oAuthServerURL + self._provider + "?oAuthTokenPath=" + oAuthTokenPath;
         self._oAuthWindow = window.open(oAuthWindowURL, "", self._oAuthServerWindow);  
     };
-    
-    self._handleOAuthLogin = function (token, user) {
-        self._setToken(token, user);
-    };
-    
-    self._setToken = function (token, user) {
+
+    /**
+     * Authenticate to Firebase with the custom token obtained through OAuth and store it as a
+     * `passportSession` cookie. Then call the user-provided callback method with the user object.
+     *
+     * @param token - Passport session token
+     * @private
+     */
+    self._setToken = function (token) {
         if (!token) return;
-        document.cookie = 'passportSession=' + token + '; path=/';
-        self._ref.auth(token, function (error, data) {
+        self._ref.authWithCustomToken(token, function (error, data) {
             if (error && error.code == "EXPIRED_TOKEN") {
                 cookie.set("passportSession", "");   
                 self._callback(error);
@@ -72,7 +54,9 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
                 self._ref.child('oAuthUsers').child(token.replace(/\./g, '')).once("value", function (snap) {
                     var user = snap.val();
                     if (!user) return;
-                    user.thirdPartyUserData = JSON.parse(user.thirdPartyUserData);
+                    cookie.set("passportSession", token);
+                    user[user.provider] = JSON.parse(user.thirdPartyUserData);
+                    user.thirdPartyUserData = undefined;
                     self._callback(null, user);
                 });
             }
@@ -84,18 +68,56 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
             console.log("FirebasePassportLogin: " + message); 
         }
     };
-    
+
+    /**
+     * Log in to Firebase through the indicated authentication provider.
+     *
+     * First creates an anonymous authentication with Firebase, passing the anonymous auth
+     * token on to the server along with a Firebase key to set with authenticated user data.
+     * We then listen for the authenticated user data to be set, calling the user-provided
+     * `callback` function when it is.
+     *
+     * The authenticated user token is stored in a cookie (`passportCookie`) to enable
+     * automatic authentication later.
+     *
+     * @param {String} provider - Provider to authenticate through ('facebook', 'reddit', etc.)
+     */
     self.login = function (provider) {
+
+        if (self._ref.getAuth()) {
+            self.logout();
+        }
+
         self._provider = provider;
-        self._anonymous_login(self._handleAnonymousLogin) 
+        self._ref.authAnonymously(function (err, authData) {
+            if (err) {
+                self._log("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
+            } else {
+                var user = authData.auth;
+                if (user) {
+                    self._initializePassportLogin(user.uid);
+                }
+            }
+
+        }, {remember: 'default'});   // remember: 'none', 'sessionOnly', 'default'
     };
-    
+
+    /**
+     * Disconnect from Firebase and clear the passportSession cookie.
+     */
     self.logout = function () {
+        var token = cookie.get("passportSession");
+        if (token) {
+            self._ref.child('oAuthUsers').child(token.replace(/\./g, '')).remove();
+        }
         self._ref.unauth();
         cookie.set("passportSession", "");
         self._callback(null, null);
     };
-    
+
+    /**
+     * Attempt to authenticate automatically with the passportSession cookie.
+     */
     setTimeout(function () {
         self._setToken(cookie.get("passportSession"));
     });

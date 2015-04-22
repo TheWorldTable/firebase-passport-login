@@ -1,5 +1,4 @@
-exports.setup = function (passport) {
-    var config = require('./config');
+exports.setup = function (passport, config) {
     var RedditStrategy = require('passport-reddit').Strategy;
 
     passport.use(new RedditStrategy({

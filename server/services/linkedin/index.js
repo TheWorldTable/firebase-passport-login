@@ -1,5 +1,4 @@
-exports.setup = function (passport) {
-    var config = require('./config');
+exports.setup = function (passport, config) {
     var LinkedInStrategy = require('passport-linkedin').Strategy;
 
     passport.use(new LinkedInStrategy({
