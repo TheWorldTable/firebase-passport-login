@@ -69,7 +69,8 @@ module.exports = function(config){
 
   var router = express.Router(["strict"]);
       router.use(cookieParser(serverConfig.COOKIE_SECRET));
-      router.use(bodyParser());
+      router.use(bodyParser.urlencoded());
+      router.use(bodyParser.json());
       router.use(session({ secret: serverConfig.COOKIE_SECRET }));
       router.use(passport.initialize());
       router.use(passport.session());
