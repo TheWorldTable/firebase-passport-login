@@ -34,6 +34,13 @@ module.exports = function (config) {
 
   var tokGen = new FirebaseTokenGenerator(serverConfig.FIREBASE_SECRET);
 
+  router.get('/loading', function (req, res, next) {
+    // This is just an empty page to display while we're waiting for firebase-passport-login.js
+    // to redirect to an authentication provider.
+    res.set({'Content-Type': 'text/html'});
+    res.send("<html><body></body></html>");
+  });
+
   serverConfig.SERVICES.forEach(function (service) {
     var serviceObject = require('./services/' + service).setup(passport, serverConfig[service]);
 
@@ -80,9 +87,9 @@ module.exports = function (config) {
             return SetPromise(ref.child(req.signedCookies.passportAnonymous), tok);
           })
           .then(function () {
-            console.log("Successfully signed in user");
-            res.set({'Content-Type': 'text/html'});
-            res.send("<script>alert('success!'); window.close();</script>");
+            //console.log("Successfully signed in user");
+            //res.set({'Content-Type': 'text/html'});
+            //res.send("<script>alert('success!'); window.close();</script>");
             //next();
           })
           .catch(function(err) {
