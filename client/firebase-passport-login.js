@@ -85,7 +85,7 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     self.login = function (provider) {
 
         // Open the authentication window immediately in order to avoid popup blockers
-        self._oAuthWindow = window.open(self._oAuthServerURL + "/loading", "", self._oAuthServerWindow);
+        self._oAuthWindow = window.open(self._oAuthServerURL + "loading", "", self._oAuthServerWindow);
 
         if (self._ref.getAuth()) {
             self.logout();
