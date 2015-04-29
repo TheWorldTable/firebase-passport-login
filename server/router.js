@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var session = require('express-session');
 var Promise = require('rsvp').Promise;
 var _ = require('lodash');
+var path = require('path');
 
 function SetPromise(ref, value){
   return new Promise(function(resolve, reject){
@@ -31,44 +32,44 @@ module.exports = function (config) {
   router.use(passport.initialize());
   router.use(passport.session());
 
-
   var tokGen = new FirebaseTokenGenerator(serverConfig.FIREBASE_SECRET);
-
-  router.get('/loading', function (req, res, next) {
-    // This is just an empty page to display while we're waiting for firebase-passport-login.js
-    // to redirect to an authentication provider.
-    res.set({'Content-Type': 'text/html'});
-    res.send("<html><body></body></html>");
-  });
 
   serverConfig.SERVICES.forEach(function (service) {
     var serviceObject = require('./services/' + service).setup(passport, serverConfig[service]);
 
     router.get('/' + service, function (req, res, next) {
       res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
+      res.cookie('passportRedirect', req.query.redirect, {signed: true});
+      //console.log('/' + service, {passportAnonymous:req.query.oAuthTokenPath});
       passport.authenticate(service, serviceObject.options)(req, res, next);
     });
 
     router.get('/' + service + '/callback', function (req, res, next) {
+      //console.log('/' + service + '/callback');
       var ref = new Firebase(serverConfig.FIREBASE_URL);
       passport.authenticate(service, function (err, auth, info) {
         if (err) {
-          console.log("Error during passport authentication:", err);
-          //next(err);
+          console.error("Error during passport authentication:", err);
+          next(err);
           return;
         }
         if (!auth) {
           console.log("User was not authenticated");
-          next("Not authenticated");
+          // If they canceled giving the provider permission, we don't want to leave the window open.
+          // Return JavaScript to close it, and in case that doesn't work, attempt to redirect to the original
+          // page (for Facebook mobile).
+          res.send('<html><body><p>Not authenticated</p><script>window.close();window.location.href=decodeURIComponent('
+            + '"' + req.signedCookies.passportRedirect + '");</script></body></html>');
           return;
         }
 
+        //console.log("User authenticated successfully");
         var user = auth.user,
           thirdPartyUserData = auth.thirdPartyUserData;
 
         ref.authWithCustomToken(serverConfig.FIREBASE_SECRET, function (err, data) {
           if (err) {
-            console.log("Error during Firebase authentication:", err);
+            console.error("Error during Firebase authentication:", err);
             next(err);
             return;
           }
@@ -84,16 +85,19 @@ module.exports = function (config) {
 
           SetPromise(ref.child('oAuthUsers').child(tok.replace(/\./g, '')), user)
           .then(function () {
+            //console.log("Set oAuthUsers");
             return SetPromise(ref.child(req.signedCookies.passportAnonymous), tok);
           })
           .then(function () {
+            //console.log("Set oAuthLogin token");
             //console.log("Successfully signed in user");
-            //res.set({'Content-Type': 'text/html'});
-            //res.send("<script>alert('success!'); window.close();</script>");
-            //next();
+            // firebase-passport-login.js will attempt to close the window when its Firebase listener
+            // gets the token, but since this doesn't seem to work in Facebook mobile, we redirect to the 
+            // original page.
+            res.redirect(decodeURIComponent(req.signedCookies.passportRedirect));
           })
           .catch(function(err) {
-            console.log("Failed to login user:", err);
+            console.error("Failed to login user:", err);
             next("Failure: " + err);
           });
         });
