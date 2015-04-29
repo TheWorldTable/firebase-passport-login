@@ -6,7 +6,7 @@
     "Nathan Hadfield <hadfieldn@gmail.com>"
   ],
   "description": "Firebase authentication using Passport",
-  "main": ["client/firebase-passport-login.js","client/firebase-passport-login.html"]
+  "main": ["client/firebase-passport-login.js", "client/firebase-passport-login.html"],
   "keywords": [
     "firebase",
     "passport"
