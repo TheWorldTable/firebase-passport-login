@@ -74,7 +74,8 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
                     var user = snap.val();
                     if (!user) return;
                     cookie.set("passportSession", token);
-                    user[user.provider] = JSON.parse(user.thirdPartyUserData);
+                    user[user.provider] = {cachedUserProfile: JSON.parse(user.thirdPartyUserData)};
+                    user.token = token;
                     user.thirdPartyUserData = undefined;
                     self._callback(null, user);
                 });
@@ -155,15 +156,41 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
         self._callback(null, null);
     };
 
+
     /**
-     * Attempt to authenticate automatically with the passportSession cookie.
+     * To re-establish an anonymous connection to the database prior to calling login,
+     * use 
+     * 
+     *   document.getElementById('login-iframe').contentWindow.postMessage('reset', '*' );
+     *
+     * where 'login-iframe' is the id of the iframe containing the login popup window.
+     *
      */
-    setTimeout(function () {
+    self._messageHandler = function (event) {
+        if (event.data === 'reset') {
+            self._getAnonymousUid();
+        }
+    };
+
+
+    /**
+     * Initialization occurs automatically with the setTimeout() call below,
+     * so it should not be necessary to call this method.
+     */
+    self.init = function () {
         // attempt to authenticate with the passportSession cookie
         self._setToken(cookie.get("passportSession"));
         // get anonymous UID now so that we can use it in the popup window URL without waiting for the Firebase callback;
         // otherwise, the popup will get blocked.
-        self._getAnonymousUid();        
+        self._getAnonymousUid();
+        window.addEventListener('message', self._messageHandler);
+    };
+
+    /**
+     * Attempt to authenticate automatically with the passportSession cookie.
+     */
+    setTimeout(function () {
+        self.init();
     });
     
     // Copyright (c) 2012 Florian H., https://github.com/js-coder https://github.com/js-coder/cookie.js
