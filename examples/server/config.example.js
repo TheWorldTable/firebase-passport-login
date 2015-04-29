@@ -20,3 +20,14 @@ exports.linkedin = {
   LINKEDIN_CLIENT_SECRET: "", // API Key
   LINKEDIN_CALLBACK_URL: "http://localhost:1337/auth/linkedin/callback"
 };
+
+exports.facebook = {
+  FACEBOOK_APP_ID: "785612021499967",
+  FACEBOOK_APP_SECRET: "7e98ddedba770dc9aad1f3178a6f8ac8",
+  FACEBOOK_CALLBACK_URL: "https://localhost:8008/auth/facebook/callback",
+  options: {
+    scope: 'email,user_location',
+    display: 'popup'
+  }
+};
+

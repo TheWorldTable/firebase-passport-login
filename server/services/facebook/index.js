@@ -20,8 +20,6 @@ exports.setup = function(passport, config) {
   ));
 
   return {
-    options: {
-      scope: 'read_stream'
-    }
+    options: config.options || {}
   };
 };
