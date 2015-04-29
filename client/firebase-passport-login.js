@@ -4,9 +4,31 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     self._ref = ref;
     self._tokenPath = "oAuthLogin";
     self._oAuthServerURL = oAuthServerURL;
-    self._oAuthServerWindow = "width=1024, height=650";
+    self._oAuthServerWindow = {width:1024, height:650};
     self._callback = callback;
     self._ready = true;
+
+
+    self._popupCenter = function (url, title, w, h) {
+        // from http://stackoverflow.com/questions/4068373/center-a-popup-window-on-screen
+        // Fixes dual-screen position                         Most browsers      Firefox
+        var dualScreenLeft = window.screenLeft != undefined ? window.screenLeft : screen.left;
+        var dualScreenTop = window.screenTop != undefined ? window.screenTop : screen.top;
+
+        width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+        height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+
+        var left = ((width / 2) - (w / 2)) + dualScreenLeft;
+        var top = ((height / 2) - (h / 2)) + dualScreenTop;
+        var newWindow = window.open(url, title, 'scrollbars=yes, width=' + w + ', height=' + h + ', top=' + top + ', left=' + left);
+
+        // Puts focus on the newWindow
+        if (window.focus) {
+            newWindow.focus();
+        }
+
+        return newWindow;
+    };
 
     /**
      * Set up Firebase listener on the anonymous user. When the anonymous user has been
@@ -14,11 +36,7 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
      * obtained through Passport.
      * @private
      */
-    self._initializePassportLogin = function (anonymousUid) {
-        var oAuthTokenPath = [
-            self._tokenPath,
-            anonymousUid
-        ].join('/');
+    self._initializePassportLogin = function (oAuthTokenPath) {
         var oAuthTokenRef = self._ref.child(oAuthTokenPath);
         
         oAuthTokenRef.on("value", function (snapshot) {
@@ -33,8 +51,7 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
             }
         });
     
-        var oAuthWindowURL = self._oAuthServerURL + self._provider + "?oAuthTokenPath=" + oAuthTokenPath;
-        self._oAuthWindow.location = oAuthWindowURL;
+
     };
 
     /**
@@ -47,8 +64,10 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     self._setToken = function (token) {
         if (!token) return;
         self._ref.authWithCustomToken(token, function (error, data) {
-            if (error && error.code == "EXPIRED_TOKEN") {
-                cookie.set("passportSession", "");   
+            if (error) {
+                if (error.code == "EXPIRED_TOKEN") {
+                    cookie.set("passportSession", "");   
+                }
                 self._callback(error);
             } else {
                 self._ref.child('oAuthUsers').child(token.replace(/\./g, '')).once("value", function (snap) {
@@ -84,21 +103,39 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
      */
     self.login = function (provider) {
 
-        // Open the authentication window immediately in order to avoid popup blockers
-        self._oAuthWindow = window.open(self._oAuthServerURL + "loading", "", self._oAuthServerWindow);
-
-        if (self._ref.getAuth()) {
-            self.logout();
-        }
+        // Have to open the authentication window immediately in order to avoid popup blockers
 
         self._provider = provider;
+        if (! self._anonymousUid) {
+            // _getAnonymousUid() should have been called automatically when the page loaded.
+            self._log("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
+        }
+        else {
+            var oAuthTokenPath = [
+                self._tokenPath,
+                self._anonymousUid
+            ].join('/');
+
+            var oAuthWindowURL = self._oAuthServerURL + self._provider 
+                + "?oAuthTokenPath=" + oAuthTokenPath 
+                + "&redirect=" + encodeURIComponent(window.location.href);
+            self._oAuthWindow = self._popupCenter(oAuthWindowURL, "_blank", self._oAuthServerWindow.width, self._oAuthServerWindow.height);
+
+            self._initializePassportLogin(oAuthTokenPath);
+        }
+    };
+
+    self._getAnonymousUid = function () {
+        if (self._ref.getAuth()) {
+            self._ref.unauth();
+        }
         self._ref.authAnonymously(function (err, authData) {
             if (err) {
                 self._log("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
             } else {
                 var user = authData.auth;
                 if (user) {
-                    self._initializePassportLogin(user.uid);
+                    self._anonymousUid = user.uid;
                 }
             }
 
@@ -122,7 +159,11 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
      * Attempt to authenticate automatically with the passportSession cookie.
      */
     setTimeout(function () {
+        // attempt to authenticate with the passportSession cookie
         self._setToken(cookie.get("passportSession"));
+        // get anonymous UID now so that we can use it in the popup window URL without waiting for the Firebase callback;
+        // otherwise, the popup will get blocked.
+        self._getAnonymousUid();        
     });
     
     // Copyright (c) 2012 Florian H., https://github.com/js-coder https://github.com/js-coder/cookie.js
