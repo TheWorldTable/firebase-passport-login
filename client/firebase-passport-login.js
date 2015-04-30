@@ -7,6 +7,7 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     self._oAuthServerWindow = {width:1024, height:650};
     self._callback = callback;
     self._ready = true;
+    self._redirectURL = null;
 
 
     self._popupCenter = function (url, title, w, h) {
@@ -119,7 +120,7 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
 
             var oAuthWindowURL = self._oAuthServerURL + self._provider 
                 + "?oAuthTokenPath=" + oAuthTokenPath 
-                + "&redirect=" + encodeURIComponent(window.location.href);
+                + "&redirect=" + encodeURIComponent(self._redirectURL);
             self._oAuthWindow = self._popupCenter(oAuthWindowURL, "_blank", self._oAuthServerWindow.width, self._oAuthServerWindow.height);
 
             self._initializePassportLogin(oAuthTokenPath);
@@ -161,14 +162,16 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
      * To re-establish an anonymous connection to the database prior to calling login,
      * use 
      * 
-     *   document.getElementById('login-iframe').contentWindow.postMessage('reset', '*' );
+     *   document.getElementById('login-iframe').contentWindow.postMessage(JSON.stringify({redirect:<url>}), '*' );
      *
      * where 'login-iframe' is the id of the iframe containing the login popup window.
      *
      */
     self._messageHandler = function (event) {
-        if (event.data === 'reset') {
-            self._getAnonymousUid();
+        var action = JSON.parse(event.data);
+        self._getAnonymousUid();
+        if (action.redirect) {
+            self._redirectURL = action.redirect;
         }
     };
 
@@ -178,11 +181,18 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
      * so it should not be necessary to call this method.
      */
     self.init = function () {
-        // attempt to authenticate with the passportSession cookie
-        self._setToken(cookie.get("passportSession"));
-        // get anonymous UID now so that we can use it in the popup window URL without waiting for the Firebase callback;
-        // otherwise, the popup will get blocked.
-        self._getAnonymousUid();
+
+        // Set up the message listener so that the calling window can create the
+        // anonymous Firebase connection whenever the login window is opened as a dialog,
+        // without reloading the page. Instead of attempting to authenticate automatically 
+        // with the passportSession whne the page is first loaded (by calling self._setToken(), 
+        // we allow Firebase to authenticate with the custom token that it stored from the 
+        // last successful authentication.
+
+        // We don't create an anonymous connection until the postMessage event
+        // so that we don't change what may be a valid Firebase session token into
+        // an anonymous session token.
+
         window.addEventListener('message', self._messageHandler);
     };
 
