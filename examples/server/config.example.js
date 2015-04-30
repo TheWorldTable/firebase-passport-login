@@ -39,3 +39,9 @@ exports.google = {
     scope: ["email","https://www.googleapis.com/auth/plus.me","https://www.googleapis.com/auth/plus.profiles.read"]
   }
 };
+
+exports.twitter = {
+  CONSUMER_KEY: "",
+  CONSUMER_SECRET: "",
+  CALLBACK_URL: "https://localhost:8008/auth/twitter/callback"
+};
