@@ -1,9 +1,9 @@
 exports.setup = function(passport, config) {
-  var FacebookStrategy = require('passport-facebook').Strategy;
+  var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
-  passport.use(new FacebookStrategy({
-      clientID: config.APP_ID,
-      clientSecret: config.APP_SECRET,
+  passport.use(new GoogleStrategy({
+      clientID: config.CLIENT_ID,
+      clientSecret: config.CLIENT_SECRET,
       callbackURL: config.CALLBACK_URL
     },
     function(accessToken, refreshToken, profile, done) {

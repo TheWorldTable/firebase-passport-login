@@ -2,7 +2,7 @@
     <head>
         <title>Firebase-Passport Example</title>
         <script src="https://cdn.firebase.com/js/client/2.2.4/firebase.js"></script>
-        <script type='text/javascript' src='firebase-passport-login.min.js'></script>
+        <script type='text/javascript' src='firebase-passport-login.js'></script>
         <script type='text/javascript'>
             var ref = new Firebase('https://twt-dev-server-nh.firebaseio.com/');
             var auth = new FirebasePassportLogin(ref, function(error, user) {
@@ -17,14 +17,13 @@
                 // user is logged out
               }
             }, "https://localhost:8008/auth/");
+
+            auth._getAnonymousUid();
             
-            var login = function () {
-                auth.login('facebook');
-            }
         </script>
     </head>
     <body>
-      <button onclick="auth.login('facebook')">Login</button>
+      <button onclick="auth.login('google')">Login</button>
       <button onclick="auth.logout()">Logout</button>
     </body>
 </html>

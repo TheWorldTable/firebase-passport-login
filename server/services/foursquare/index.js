@@ -2,9 +2,9 @@ exports.setup = function (passport, config) {
     var FoursquareStrategy = require('passport-foursquare').Strategy;
 
     passport.use(new FoursquareStrategy({
-        clientID: config.FOURSQUARE_CLIENT_ID,
-        clientSecret: config.FOURSQUARE_CLIENT_SECRET,
-        callbackURL: config.FOURSQUARE_CALLBACK_URL
+        clientID: config.CLIENT_ID,
+        clientSecret: config.CLIENT_SECRET,
+        callbackURL: config.CALLBACK_URL
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
