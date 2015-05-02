@@ -2,9 +2,9 @@ exports.setup = function(passport, config) {
   var FacebookStrategy = require('passport-facebook').Strategy;
 
   passport.use(new FacebookStrategy({
-      clientID: config.APP_ID,
-      clientSecret: config.APP_SECRET,
-      callbackURL: config.CALLBACK_URL
+      clientID: config.clientID,
+      clientSecret: config.clientSecret,
+      callbackURL: config.callbackURL
     },
     function(accessToken, refreshToken, profile, done) {
       var user = {
