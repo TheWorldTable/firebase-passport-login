@@ -50,8 +50,12 @@ access:
     read: $uid === auth.uid
     write: $uid === auth.uid
 
-  # User data from OAuth is only visible to the user with matching uid
+  - location: oAuth/users/
+
+  # User data from OAuth is only visible to the user with matching uid.
+  # Tokens can only be written by an admin user, and can only be deleted
+  # by a user with a matching uid.
   - location: oAuth/users/$token/
     read: prev['uid'] === auth.uid
-    write: next['uid'] === auth.uid && !prev['uid'].exists()
+    write: prev['uid'] === auth.uid && !next.exists()
 */
