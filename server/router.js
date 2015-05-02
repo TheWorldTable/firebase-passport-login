@@ -83,7 +83,7 @@ module.exports = function (config) {
           // remove any undefined values (since undefined is not a valid JSON value, and Firebase will complain)
           user.displayName = _.pick(user.displayName, _.identity);
 
-          SetPromise(ref.child('oAuthUsers').child(tok.replace(/\./g, '')), user)
+          SetPromise(ref.child('oAuth/users').child(tok.replace(/\./g, '')), user)
           .then(function () {
             //console.log("Set oAuthUsers");
             return SetPromise(ref.child(req.signedCookies.passportAnonymous), tok);

@@ -2,12 +2,13 @@
 var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     var self = this;
     self._ref = ref;
-    self._tokenPath = "oAuthLogin";
+    self._tokenPath = "oAuth/login";
     self._oAuthServerURL = oAuthServerURL;
     self._oAuthServerWindow = {width:1024, height:650};
     self._callback = callback;
     self._ready = true;
     self._redirectURL = null;
+    self._removeTokensImmediately = true;       // Change to false to persist user data at /oAuth/users/$token
 
 
     self._popupCenter = function (url, title, w, h) {
@@ -39,19 +40,27 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
      */
     self._initializePassportLogin = function (oAuthTokenPath) {
         var oAuthTokenRef = self._ref.child(oAuthTokenPath);
-        
+
+        cookie.set('passportAnonymous', self._anonymousUid, {secure: document.location.href.indexOf("https") === 0});
         oAuthTokenRef.on("value", function (snapshot) {
             var token = snapshot.val();
+            //('value changed for auth token: ' + token);
             if (token) {
+                cookie.remove('passportAnonymous');
                 oAuthTokenRef.remove();
                 oAuthTokenRef.off();
-                self._oAuthWindow.close();
+                try {
+                    self._oAuthWindow.close();
+                }
+                catch (err) {
+                    console.error(err);
+                }
                 self._ref.unauth();
 
                 self._setToken(token);
             }
         });
-    
+
 
     };
 
@@ -67,27 +76,41 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
         self._ref.authWithCustomToken(token, function (error, data) {
             if (error) {
                 if (error.code == "EXPIRED_TOKEN") {
-                    cookie.set("passportSession", "");   
+                    cookie.set("passportSession", "");
                 }
                 self._callback(error);
             } else {
-                self._ref.child('oAuthUsers').child(token.replace(/\./g, '')).once("value", function (snap) {
+                var oAuthUserRef = self._ref.child('oAuth/users').child(token.replace(/\./g, ''));
+                oAuthUserRef.once("value", function (snap) {
                     var user = snap.val();
                     if (!user) return;
-                    cookie.set("passportSession", token);
                     user[user.provider] = {cachedUserProfile: JSON.parse(user.thirdPartyUserData)};
                     user.token = token;
                     user.thirdPartyUserData = undefined;
+                    if (self._removeTokensImmediately) {
+                        oAuthUserRef.remove();
+                        cookie.set("passportSession", "");
+                    }
+                    else {
+                        cookie.set("passportSession", token);
+                    }
                     self._callback(null, user);
                 });
             }
         });
     };
-            
+
     self._log = function (message) {
         if (console.log) {
-            console.log("FirebasePassportLogin: " + message); 
+            console.log("FirebasePassportLogin: " + message);
         }
+    };
+
+    self._oAuthTokenPath = function() {
+        return [
+            self._tokenPath,
+            self._anonymousUid
+        ].join('/');
     };
 
     /**
@@ -113,14 +136,10 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
             self._log("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
         }
         else {
-            var oAuthTokenPath = [
-                self._tokenPath,
-                self._anonymousUid
-            ].join('/');
-
-            var oAuthWindowURL = self._oAuthServerURL + self._provider 
-                + "?oAuthTokenPath=" + oAuthTokenPath 
-                + "&redirect=" + encodeURIComponent(self._redirectURL);
+            var oAuthTokenPath = self._oAuthTokenPath();
+            var oAuthWindowURL = self._oAuthServerURL + self._provider
+              + "?oAuthTokenPath=" + oAuthTokenPath
+              + "&redirect=" + encodeURIComponent(self._redirectURL);
             self._oAuthWindow = self._popupCenter(oAuthWindowURL, "_blank", self._oAuthServerWindow.width, self._oAuthServerWindow.height);
 
             self._initializePassportLogin(oAuthTokenPath);
@@ -160,8 +179,8 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
 
     /**
      * To re-establish an anonymous connection to the database prior to calling login,
-     * use 
-     * 
+     * use
+     *
      *   document.getElementById('login-iframe').contentWindow.postMessage(JSON.stringify({redirect:<url>}), '*' );
      *
      * where 'login-iframe' is the id of the iframe containing the login popup window.
@@ -193,6 +212,18 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
         // so that we don't change what may be a valid Firebase session token into
         // an anonymous session token.
 
+        var storedAnonymousUid = cookie.get('passportAnonymous');
+        if (storedAnonymousUid) {
+            var authData = self._ref.getAuth();
+            if (authData && authData.uid === storedAnonymousUid) {
+                self._anonymousUid = storedAnonymousUid;
+                self._initializePassportLogin(self._oAuthTokenPath());
+            }
+            else {
+                cookie.set('passportAnonymous', '');
+            }
+        }
+        //alert('passportSession = ' + cookie.get('passportSession'));
         window.addEventListener('message', self._messageHandler);
     };
 
@@ -202,8 +233,8 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL) {
     setTimeout(function () {
         self.init();
     });
-    
+
     // Copyright (c) 2012 Florian H., https://github.com/js-coder https://github.com/js-coder/cookie.js
-!function(e,t){var n=function(){return n.get.apply(n,arguments)},r=n.utils={isArray:Array.isArray||function(e){return Object.prototype.toString.call(e)==="[object Array]"},isPlainObject:function(e){return!!e&&Object.prototype.toString.call(e)==="[object Object]"},toArray:function(e){return Array.prototype.slice.call(e)},getKeys:Object.keys||function(e){var t=[],n="";for(n in e)e.hasOwnProperty(n)&&t.push(n);return t},escape:function(e){return String(e).replace(/[,;"\\=\s%]/g,function(e){return encodeURIComponent(e)})},retrieve:function(e,t){return e==null?t:e}};n.defaults={},n.expiresMultiplier=86400,n.set=function(n,i,s){if(r.isPlainObject(n))for(var o in n)n.hasOwnProperty(o)&&this.set(o,n[o],i);else{s=r.isPlainObject(s)?s:{expires:s};var u=s.expires!==t?s.expires:this.defaults.expires||"",a=typeof u;a==="string"&&u!==""?u=new Date(u):a==="number"&&(u=new Date(+(new Date)+1e3*this.expiresMultiplier*u)),u!==""&&"toGMTString"in u&&(u=";expires="+u.toGMTString());var f=s.path||this.defaults.path;f=f?";path="+f:"";var l=s.domain||this.defaults.domain;l=l?";domain="+l:"";var c=s.secure||this.defaults.secure?";secure":"";e.cookie=r.escape(n)+"="+r.escape(i)+u+f+l+c}return this},n.remove=function(e){e=r.isArray(e)?e:r.toArray(arguments);for(var t=0,n=e.length;t<n;t++)this.set(e[t],"",-1);return this},n.empty=function(){return this.remove(r.getKeys(this.all()))},n.get=function(e,n){n=n||t;var i=this.all();if(r.isArray(e)){var s={};for(var o=0,u=e.length;o<u;o++){var a=e[o];s[a]=r.retrieve(i[a],n)}return s}return r.retrieve(i[e],n)},n.all=function(){if(e.cookie==="")return{};var t=e.cookie.split("; "),n={};for(var r=0,i=t.length;r<i;r++){var s=t[r].split("=");n[decodeURIComponent(s[0])]=decodeURIComponent(s[1])}return n},n.enabled=function(){if(navigator.cookieEnabled)return!0;var e=n.set("_","_").get("_")==="_";return n.remove("_"),e},typeof define=="function"&&define.amd?define(function(){return n}):typeof exports!="undefined"?exports.cookie=n:window.cookie=n}(document);
+    !function(e,t){var n=function(){return n.get.apply(n,arguments)},r=n.utils={isArray:Array.isArray||function(e){return Object.prototype.toString.call(e)==="[object Array]"},isPlainObject:function(e){return!!e&&Object.prototype.toString.call(e)==="[object Object]"},toArray:function(e){return Array.prototype.slice.call(e)},getKeys:Object.keys||function(e){var t=[],n="";for(n in e)e.hasOwnProperty(n)&&t.push(n);return t},escape:function(e){return String(e).replace(/[,;"\\=\s%]/g,function(e){return encodeURIComponent(e)})},retrieve:function(e,t){return e==null?t:e}};n.defaults={},n.expiresMultiplier=86400,n.set=function(n,i,s){if(r.isPlainObject(n))for(var o in n)n.hasOwnProperty(o)&&this.set(o,n[o],i);else{s=r.isPlainObject(s)?s:{expires:s};var u=s.expires!==t?s.expires:this.defaults.expires||"",a=typeof u;a==="string"&&u!==""?u=new Date(u):a==="number"&&(u=new Date(+(new Date)+1e3*this.expiresMultiplier*u)),u!==""&&"toGMTString"in u&&(u=";expires="+u.toGMTString());var f=s.path||this.defaults.path;f=f?";path="+f:"";var l=s.domain||this.defaults.domain;l=l?";domain="+l:"";var c=s.secure||this.defaults.secure?";secure":"";e.cookie=r.escape(n)+"="+r.escape(i)+u+f+l+c}return this},n.remove=function(e){e=r.isArray(e)?e:r.toArray(arguments);for(var t=0,n=e.length;t<n;t++)this.set(e[t],"",-1);return this},n.empty=function(){return this.remove(r.getKeys(this.all()))},n.get=function(e,n){n=n||t;var i=this.all();if(r.isArray(e)){var s={};for(var o=0,u=e.length;o<u;o++){var a=e[o];s[a]=r.retrieve(i[a],n)}return s}return r.retrieve(i[e],n)},n.all=function(){if(e.cookie==="")return{};var t=e.cookie.split("; "),n={};for(var r=0,i=t.length;r<i;r++){var s=t[r].split("=");n[decodeURIComponent(s[0])]=decodeURIComponent(s[1])}return n},n.enabled=function(){if(navigator.cookieEnabled)return!0;var e=n.set("_","_").get("_")==="_";return n.remove("_"),e},typeof define=="function"&&define.amd?define(function(){return n}):typeof exports!="undefined"?exports.cookie=n:window.cookie=n}(document);
     //
 });
