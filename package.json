@@ -1,37 +1,47 @@
 {
   "name": "firebase-passport-login",
-  "version": "0.0.0-70",
-  "description": "",
-  "main": "index.js",
-  "dependencies": {
-    "body-parser": "^1.4.3",
-    "cookie-parser": "^1.3.2",
-    "es6-promise": "^1.0.0",
-    "express": "^4.5.1",
-    "express-session": "^1.6.4",
-    "firebase": "^1.0.17",
-    "firebase-token-generator": "~0.1.4",
-    "passport": "~0.1.18",
-    "passport-foursquare": "^1.0.0",
-    "passport-github": "^0.1.5",
-    "passport-linkedin": "^0.1.3",
-    "passport-reddit": "^0.2.4",
-    "passport-stack": "git://github.com/jessta/passport-stack.git",
-    "passport-trello": "^0.1.4"
-  },
-  "devDependencies": {
-    "firebase-token-generator": "~0.1.4",
-    "passport": "~0.1.18",
-    "passport-foursquare": "~0.1.3",
-    "express": "~3.4.8",
-    "passport-reddit": "~0.2.4",
-    "crypto": "0.0.3",
-    "firebase": "~1.0.2",
-    "underscore": "~1.5.2"
+  "version": "0.1.0",
+  "description": "Use Express Passport libraries with Firebase",
+  "main": "server/router.js",
+  "directories": {
+    "example": "examples"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "BSD"
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Rigidflame/firebase-passport-login.git"
+  },
+  "keywords": [
+    "firebase",
+    "passport",
+    "express"
+  ],
+  "author": "Abraham Haskins <abe@rigidflame.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Rigidflame/firebase-passport-login/issues"
+  },
+  "dependencies": {
+    "body-parser": "^1.12.3",
+    "commander": "^2.8.1",
+    "cookie-parser": "^1.3.4",
+    "crypto": "0.0.3",
+    "express": "~4.0.0",
+    "express-session": "^1.11.1",
+    "firebase": "~2.2.4",
+    "firebase-token-generator": "~2.0.0",
+    "lodash": "^3.7.0",
+    "passport": "~0.2.1",
+    "passport-facebook": "^2.0.0",
+    "passport-foursquare": "~0.1.3",
+    "passport-google-oauth": "^0.2.0",
+    "passport-reddit": "~0.2.4",
+    "passport-twitter": "^1.0.3",
+    "path": "^0.11.14",
+    "rsvp": "^3.0.18",
+    "underscore": "~1.5.2"
+  },
+  "devDependencies": {}
 }

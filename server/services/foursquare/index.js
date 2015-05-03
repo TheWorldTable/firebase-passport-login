@@ -2,9 +2,9 @@ exports.setup = function (passport, config) {
     var FoursquareStrategy = require('passport-foursquare').Strategy;
 
     passport.use(new FoursquareStrategy({
-        clientID: config.FOURSQUARE_CLIENT_ID,
-        clientSecret: config.FOURSQUARE_CLIENT_SECRET,
-        callbackURL: config.FOURSQUARE_CALLBACK_URL
+        clientID: config.clientID,
+        clientSecret: config.clientSecret,
+        callbackURL: config.callbackURL
       },
       function(accessToken, refreshToken, profile, done) {
             var user = {
@@ -13,10 +13,9 @@ exports.setup = function (passport, config) {
                 accessToken: accessToken,
                 id: profile.id,
                 uid: profile.provider + ':' + profile.id,
-                displayName: profile.name.givenName + ' ' + profile.name.familyName,
-                thirdPartyUserData: profile._json
+                displayName: profile.name.givenName + ' ' + profile.name.familyName 
             };
-            return done(0, user);
+            return done(0, {user: user, thirdPartyUserData: profile._json});
       }
     ));
 
@@ -24,4 +23,4 @@ exports.setup = function (passport, config) {
         options: {
         }
     };
-};
+}

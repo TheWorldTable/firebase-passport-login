@@ -1,0 +1,22 @@
+{
+  "name": "firebase-passport-login",
+  "version": "1.0.0",
+  "homepage": "https://github.com/hadfieldn/firebase-passport-login",
+  "authors": [
+    "Nathan Hadfield <hadfieldn@gmail.com>"
+  ],
+  "description": "Firebase authentication using Passport",
+  "main": ["client/firebase-passport-login.js", "client/firebase-passport-login.html"],
+  "keywords": [
+    "firebase",
+    "passport"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
