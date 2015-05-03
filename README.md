@@ -1,3 +1,5 @@
+### TODO: Update instructions to reflect changes made in this fork
+
 FirebasePassportLogin (Beta!)
 =======================
 
