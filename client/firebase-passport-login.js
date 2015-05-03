@@ -1,7 +1,8 @@
 // Copyright (c) 2013 Abraham Haskins, https://github.com/abeisgreat https://github.com/rigidflame/firebase-passport-login
-var FirebasePassportLogin = (function (ref, callback, oAuthServerURL, firebaseURL) {
+var FirebasePassportLogin = (function (firebaseURL, callback, oAuthServerURL) {
+    /* globals Firebase */
     var self = this;
-    self._ref = ref;
+    self._ref = new Firebase(firebaseURL);
     self._tokenPath = "oAuth/login";
     self._oAuthServerURL = oAuthServerURL;
     self._oAuthServerWindow = {width:1024, height:650};
@@ -142,7 +143,7 @@ var FirebasePassportLogin = (function (ref, callback, oAuthServerURL, firebaseUR
               + "?oAuthTokenPath=" + oAuthTokenPath
               + "&redirect=" + encodeURIComponent(self._redirectURL);
             if (self._firebaseURL) {
-                oAuthWindowURL += encodeURIComponent(self._firebaseURL);
+                oAuthWindowURL += "&firebaseURL=" + encodeURIComponent(self._firebaseURL);
             }
             self._oAuthWindow = self._popupCenter(oAuthWindowURL, "_blank",
               self._oAuthServerWindow.width,

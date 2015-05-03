@@ -40,8 +40,8 @@ module.exports = function (config, options) {
     router.get('/' + service, function (req, res, next) {
       res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
       res.cookie('passportRedirect', req.query.redirect, {signed: true});
-      if (opts.devMode && req.query.firebaseUrl) {
-        res.cookie('passportFirebase', req.query.firebaseUrl, {signed: true});
+      if (opts.devMode && req.query.firebaseURL) {
+        res.cookie('passportFirebase', req.query.firebaseURL, {signed: true});
       }
       //console.log('/' + service, {passportAnonymous:req.query.oAuthTokenPath});
       passport.authenticate(service, serviceObject.options)(req, res, next);
