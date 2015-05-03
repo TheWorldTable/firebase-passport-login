@@ -1,7 +1,12 @@
-exports.SERVICES = ["reddit", "foursquare", "linkedin"];
-exports.FIREBASE_SECRET = "";
-exports.FIREBASE_URL = "https://<Your Firebase>.firebaseio.com";
 exports.COOKIE_SECRET = "<Random Secret>";
+exports.FIREBASE_URL = "https://<Your Firebase>.firebaseio.com";
+exports.FIREBASE_SECRETS = {
+  'https://the-world-table.firebaseio.com': '<firebase_secret>',
+  'https://twt-dev-server-nh.firebaseio.com': '<firebase_secret>',
+  'https://twt-dev-sever.firebaseio.com': '<firebase_secret>'
+};
+
+exports.SERVICES = ["reddit", "foursquare", "linkedin"];
 
 exports.reddit = {
   clientID: "",

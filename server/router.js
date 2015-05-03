@@ -22,8 +22,8 @@ function SetPromise(ref, value){
   });
 }
 
-module.exports = function (config) {
-  var serverConfig = config;
+module.exports = function (config, options) {
+  var serverConfig = config, opts = options || {};
 
   var router = express.Router(["strict"]);
   router.use(cookieParser(serverConfig.COOKIE_SECRET));
@@ -32,7 +32,7 @@ module.exports = function (config) {
   router.use(passport.initialize());
   router.use(passport.session());
 
-  var tokGen = new FirebaseTokenGenerator(serverConfig.FIREBASE_SECRET);
+  var tokGen = new FirebaseTokenGenerator(serverConfig.FIREBASE_SECRETS[serverConfig.FIREBASE_URL]);
 
   serverConfig.SERVICES.forEach(function (service) {
     var serviceObject = require('./services/' + service).setup(passport, serverConfig[service]);
@@ -40,14 +40,29 @@ module.exports = function (config) {
     router.get('/' + service, function (req, res, next) {
       res.cookie('passportAnonymous', req.query.oAuthTokenPath, {signed: true});
       res.cookie('passportRedirect', req.query.redirect, {signed: true});
+      if (opts.devMode && req.query.firebaseUrl) {
+        res.cookie('passportFirebase', req.query.firebaseUrl, {signed: true});
+      }
       //console.log('/' + service, {passportAnonymous:req.query.oAuthTokenPath});
       passport.authenticate(service, serviceObject.options)(req, res, next);
     });
 
     router.get('/' + service + '/callback', function (req, res, next) {
       //console.log('/' + service + '/callback');
-      var ref = new Firebase(serverConfig.FIREBASE_URL);
-      passport.authenticate(service, function (err, auth, info) {
+      var firebaseUrl = (opts.devMode && req.signedCookies.passportFirebase)
+          ? decodeURIComponent(req.signedCookies.passportFirebase)
+          : serverConfig.FIREBASE_URL,
+        firebaseSecret = serverConfig.FIREBASE_SECRETS[firebaseUrl];
+
+      if (!firebaseSecret) {
+        var err = new Error("Secret not configured for Firebase URL '" + firebaseUrl + "'");
+        console.error(err);
+        next(err);
+        return;
+      }
+      ref = new Firebase(firebaseUrl);
+
+      passport.authenticate(service, function (err, auth) {
         if (err) {
           console.error("Error during passport authentication:", err);
           next(err);
@@ -67,7 +82,7 @@ module.exports = function (config) {
         var user = auth.user,
           thirdPartyUserData = auth.thirdPartyUserData;
 
-        ref.authWithCustomToken(serverConfig.FIREBASE_SECRET, function (err, data) {
+        ref.authWithCustomToken(firebaseSecret, function (err, data) {
           if (err) {
             console.error("Error during Firebase authentication:", err);
             next(err);
@@ -76,7 +91,16 @@ module.exports = function (config) {
 
           var tok = null;
           if (user) {
-            tok = tokGen.createToken(user);
+            // For performance, if not running in dev mode, we save a FirebaseTokenGenerator
+            // for the only Firebase URL, as part of the module initialization (above).
+            // Otherwise, we have to create a token generator for the Firebase URL that
+            // was specified with this request.
+            if (! opts.devMode) {
+              tok = tokGen.createToken(user);
+            } else {
+              var devTokGen = new FirebaseTokenGenerator(firebaseSecret);
+              tok = devTokGen.createToken(user);
+            }
           }
           user.thirdPartyUserData = JSON.stringify(thirdPartyUserData);
 
