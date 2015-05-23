@@ -12,6 +12,9 @@
     "passport"
   ],
   "license": "MIT",
+  "dependencies": {
+    "firebase-element": "PolymerElements/firebase-element",
+  },
   "ignore": [
     "**/.*",
     "node_modules",
