@@ -13,7 +13,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "firebase-element": "PolymerElements/firebase-element",
+    "firebase-element": "GoogleWebComponents/firebase-element"
   },
   "ignore": [
     "**/.*",
