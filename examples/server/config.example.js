@@ -1,3 +1,5 @@
+exports.debugTokens = false;
+
 exports.COOKIE_SECRET = "<Random Secret>";
 exports.FIREBASE_URL = "https://<Your Firebase>.firebaseio.com";
 exports.FIREBASE_SECRETS = {

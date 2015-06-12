@@ -99,7 +99,7 @@ module.exports = function (config, options) {
               tok = tokGen.createToken(user);
             } else {
               var devTokGen = new FirebaseTokenGenerator(firebaseSecret);
-              tok = devTokGen.createToken(user);
+              tok = devTokGen.createToken(user, {debug: serverConfig.debugTokens});
             }
           }
           user.thirdPartyUserData = JSON.stringify(thirdPartyUserData);
