@@ -194,13 +194,17 @@ var FirebasePassportLogin = (function (firebaseURL, oAuthServerURL, callback) {
      *
      */
     self._messageHandler = function (event) {
+      try {
         var action = JSON.parse(event.data);
         self._getAnonymousUid();
         if (action.redirect) {
-            self._redirectURL = action.redirect;
+          self._redirectURL = action.redirect;
         }
+      } catch (err) {
+        // couldn't parse the event data -- must have been a message not intended for us
+        //console.log({err:err, 'event.data': event.data, status: 'Error handling event'}, '_messageHandler');
+      }
     };
-
 
     /**
      * Initialization occurs automatically with the setTimeout() call below,
