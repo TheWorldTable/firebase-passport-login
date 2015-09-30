@@ -77,6 +77,22 @@ module.exports = function (config, options) {
             + '"' + req.signedCookies.passportRedirect + '");</script></body></html>');
           return;
         }
+        if (!req.signedCookies.passportAnonymous) {
+          var cookiesDisabledDetected = false;
+          console.error('No `passportAnonymous` cookie found; can\'t return authentication token through Firebase.');
+          if (!req.signedCookies.passportRedirect) {
+            console.error('No `passportRedirect` cookie found; can\'t redirect to original page if window.close() fails.');
+            cookiesDisabledDetected = true;
+          }
+          var script = 'window.close();', msg = 'Not authenticated.';
+          if (cookiesDisabledDetected) {
+            msg += ' Are cookies disabled?';
+          } else {
+            script += 'window.location.href=decodeURIComponent("' + req.signedCookies.passportRedirect + '");'
+          }
+          res.send('<html><body><p>' + msg + '</p><script>' + script + '</script></body></html>');
+          return;
+        }
 
         //console.log("User authenticated successfully");
         var user = auth.user,
@@ -110,6 +126,7 @@ module.exports = function (config, options) {
           SetPromise(ref.child('oAuth/users').child(tok.replace(/\./g, '')), user)
           .then(function () {
             //console.log("Set oAuthUsers");
+            // Note that we checked for existence of `req.signedCookies.passportAnonymous` above
             return SetPromise(ref.child(req.signedCookies.passportAnonymous), tok);
           })
           .then(function () {
