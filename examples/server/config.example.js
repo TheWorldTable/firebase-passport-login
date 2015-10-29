@@ -52,3 +52,9 @@ exports.twitter = {
   consumerSecret: "",
   callbackURL: "https://localhost:8008/auth/twitter/callback"
 };
+
+exports.disqus = {
+  consumerKey: "",
+  consumerSecret: "",
+  callbackURL: "https://localhost:8008/auth/disqus/callback"
+};
