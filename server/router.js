@@ -69,7 +69,7 @@ module.exports = function (config, options) {
           return;
         }
         if (!auth) {
-          console.log("User was not authenticated");
+          //console.log("User was not authenticated");
           // If they canceled giving the provider permission, we don't want to leave the window open.
           // Return JavaScript to close it, and in case that doesn't work, attempt to redirect to the original
           // page (for Facebook mobile).
@@ -119,6 +119,9 @@ module.exports = function (config, options) {
             }
           }
           user.thirdPartyUserData = JSON.stringify(thirdPartyUserData);
+          if (req.ip) {
+            user.ipAddress = req.ip;
+          }
 
           // remove any undefined values (since undefined is not a valid JSON value, and Firebase will complain)
           user.displayName = _.pick(user.displayName, _.identity);
