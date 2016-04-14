@@ -238,6 +238,7 @@ var FirebasePassportLogin = (function (firebaseURL, oAuthServerURL, callback) {
         _log("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
         return _getAnonymousUid().then(function (uid) {
           // this won't work for the current attempt but might fix it for the next
+          // note that we can't open the login window now because the auth attempt would trigger popup blockers
           self._anonymousUid = uid;
           throw new Error('Anonymous UID for FireBase connection had not been established '
             + ' but is now ready for next attempt.');
