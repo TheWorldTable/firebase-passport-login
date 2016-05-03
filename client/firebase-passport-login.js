@@ -161,7 +161,7 @@ var FirebasePassportLogin = (function (firebaseURL, oAuthServerURL, callback) {
         //console.log({err:err, 'event.data': event.data, status: 'Error handling event'}, '_messageHandler');
       }
 
-      if (action) {
+      if (action && action.type === 'init') {
 
         //console.log({event: event}, 'Received FirebasePassportLogin initialization request from parent window');
 
@@ -179,8 +179,8 @@ var FirebasePassportLogin = (function (firebaseURL, oAuthServerURL, callback) {
     }
 
     /**
-     * Initialize 
-     * 
+     * Initialize
+     *
      * Initialization occurs automatically with the setTimeout() call below,
      * so it should be unnecessary for other modules to call this method directly.
      */
@@ -188,26 +188,20 @@ var FirebasePassportLogin = (function (firebaseURL, oAuthServerURL, callback) {
 
         // Set up the message listener so that the calling window can create the
         // anonymous Firebase connection whenever the login window is opened as a dialog,
-        // without reloading the page. Instead of attempting to authenticate automatically 
+        // without reloading the page. Instead of attempting to authenticate automatically
         // with the passportSession when the page is first loaded
         // (by calling _getUserForTokenAndSaveSession()),
-        // we allow Firebase to authenticate with the custom token that it stored from the 
+        // we allow Firebase to authenticate with the custom token that it stored from the
         // last successful authentication.
 
         // We don't create an anonymous connection until the postMessage event
         // so that we don't change what may be a valid Firebase session token into
         // an anonymous session token.
 
-        var storedAnonymousUid = cookie.get('passportAnonymous');
-        if (storedAnonymousUid) {
-            var authData = self._ref.getAuth();
-            if (authData && authData.uid === storedAnonymousUid) {
-                self._anonymousUid = storedAnonymousUid;
-                _initializeFirebaseOAuthUserListener(_firebaseOAuthUserPath(self._anonymousUid));
-            }
-            else {
-                cookie.set('passportAnonymous', '');
-            }
+        var authData = self._ref.getAuth();
+        if (authData) {
+          //console.log({authData: authData}, 'FirebasePassportLogin._init()');
+          self._callback(null, {token: authData.token, provider: authData.provider, uid: authData.uid});
         }
         //alert('passportSession = ' + cookie.get('passportSession'));
         window.addEventListener('message', _messageHandler);
