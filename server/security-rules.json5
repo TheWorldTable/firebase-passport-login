@@ -47,8 +47,8 @@ schema:
 access:
   # Anonymous connections for OAuth can read & write their own entry only
   - location: oAuth/login/$uid/
-    read: $uid === auth.uid
-    write: $uid === auth.uid
+    read: true
+    write: true
 
   - location: oAuth/users/
 
