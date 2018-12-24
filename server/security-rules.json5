@@ -1,61 +1,23 @@
 "oAuth": {
-  ".write": "false",
+  ".write": "truefalse",
   ".read": "false",
   "login": {
-    ".write": "false",
-    ".read": "false",
-    "$uid":{
-      ".write": "(((!newData.parent().parent().exists()||!(((newData.parent().parent().isString()||newData.parent().parent().isNumber()||newData.parent().parent().isBoolean()))))&&(!newData.exists()||newData.isString())&&$uid===auth.uid))",
-      ".read": "($uid===auth.uid)"
-    }
-  },
-  "users": {
-    ".write": "false",
-    ".read": "false",
-    "$token": {
-      ".write": "(((!newData.parent().parent().exists()||!(((newData.parent().parent().isString()||newData.parent().parent().isNumber()||newData.parent().parent().isBoolean()))))&&(!newData.exists()||!(((newData.isString()||newData.isNumber()||newData.isBoolean()))))&&(newData.val()==null||newData.child('uid').exists())&&(!newData.child('uid').exists()||newData.child('uid').isString())&&newData.child('uid').val()===auth.uid&&!data.child('uid').exists()))",
-      ".validate": "(((!newData.parent().parent().exists()||!(((newData.parent().parent().isString()||newData.parent().parent().isNumber()||newData.parent().parent().isBoolean()))))&&(!newData.exists()||!(((newData.isString()||newData.isNumber()||newData.isBoolean()))))&&(newData.val()==null||newData.child('uid').exists())&&(!newData.child('uid').exists()||newData.child('uid').isString())&&newData.child('uid').val()===auth.uid&&!data.child('uid').exists()))",
-      ".read": "(data.child('uid').val()===auth.uid)",
-      "uid": {
-        ".write": "((!newData.parent().parent().parent().exists()||!((newData.parent().parent().parent().isString()||newData.parent().parent().parent().isNumber()||newData.parent().parent().parent().isBoolean())))&&true&&(!newData.parent().exists()||!((newData.parent().isString()||newData.parent().isNumber()||newData.parent().isBoolean())))&&(newData.parent().val()==null||newData.parent().child('uid').exists())&&(!newData.exists()||newData.isString())&&newData.parent().child('uid').val()===auth.uid&&!data.parent().child('uid').exists())",
-        ".read": "(data.parent().child('uid').val()===auth.uid)"
-      }
-    }
+    ".write": "true",
+    ".read": "true"
   }
 }
 
-
 /*
-# Blaze format
+  bolt format:
 
-schema:
-  properties:
-    oAuth:
-      type: object
-      properties:
-        login:
-          $uid:
-            type: string
-        users:
-          ~$token:
-            type: object
-            required: ['uid']
-            additionalProperties: true
-            properties:
-              uid:
-                type: string
-access:
-  # Anonymous connections for OAuth can read & write their own entry only
-  - location: oAuth/login/$uid/
-    read: true
-    write: true
+  path /oAuth/login {  // don't let anyone scan for anonymous tokens
+    read() { false }
+    write() { false }
+  }
+  path /oAuth/login/{$anonymousToken} is String {
+    // Anonymous connections for OAuth can read & write their own entry only.
+    read() { true }
+    write() { true }
+  }
 
-  - location: oAuth/users/
-
-  # User data from OAuth is only visible to the user with matching uid.
-  # Tokens can only be written by an admin user, and can only be deleted
-  # by a user with a matching uid.
-  - location: oAuth/users/$token/
-    read: prev['uid'] === auth.uid
-    write: prev['uid'] === auth.uid && !next.exists()
 */

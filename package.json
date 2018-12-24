@@ -27,22 +27,18 @@
     "body-parser": "^1.12.3",
     "commander": "^2.8.1",
     "cookie-parser": "^1.3.4",
-    "crypto": "0.0.3",
     "express": "~4.0.0",
     "express-session": "^1.11.1",
-    "firebase": "~2.2.4",
-    "firebase-token-generator": "~2.0.0",
-    "lodash": "^3.7.0",
+    "firebase": "^5.7.1",
+    "firebase-admin": "^6.4.0",
+    "lodash": "^4.17.11",
     "passport": "~0.2.1",
     "passport-disqus": "^0.1.3",
     "passport-facebook": "^2.0.0",
-    "passport-foursquare": "~0.1.3",
     "passport-google-oauth": "^0.2.0",
-    "passport-reddit": "~0.2.4",
     "passport-twitter": "^1.0.3",
     "path": "^0.11.14",
-    "rsvp": "^3.0.18",
-    "underscore": "~1.5.2"
+    "rsvp": "^3.0.18"
   },
   "devDependencies": {}
 }

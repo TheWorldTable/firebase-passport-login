@@ -1,29 +1,55 @@
 <html>
-    <head>
-        <title>Firebase-Passport Example</title>
-        <script src="https://cdn.firebase.com/js/client/2.2.4/firebase.js"></script>
-        <script type='text/javascript' src='firebase-passport-login.js'></script>
-        <script type='text/javascript'>
-            var ref = new Firebase('https://twt-dev-server-nh.firebaseio.com/');
-            var auth = new FirebasePassportLogin(ref, function(error, user) {
-              if (error) {
-                // an error occurred while attempting login
-                console.log(error);
-              } else if (user) {
-                // user authenticated with Firebase
-                console.log('User ID: ' + user.uid + ', Provider: ' + user.provider);
-                console.log(user);
-              } else {
-                // user is logged out
-              }
-            }, "https://localhost:8008/auth/");
+<head>
+  <title>Firebase-Passport Example</title>
+  <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase-database.js"></script>
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "<key>",
+      authDomain: "<host>",
+      databaseURL: "<url>",
+      projectId: "<project-id>"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <script type='text/javascript' src='firebase-passport-login.js'></script>
+</head>
+<body>
+<div style="text-align: center;">
+  <button onclick="auth.login('facebook')">Facebook Login</button>
+  <button onclick="auth.login('google')">Google Login</button>
+  <button onclick="auth.login('twitter')">Twitter Login</button>
+  <button onclick="auth.login('disqus')">Disqus Login</button>
+  <button onclick="auth.logout()">Logout</button>
+</div>
+<textarea id="out" style="width: 100%; height: calc(100% - 40px); margin-top: 10px;"></textarea>
+<script type='text/javascript'>
+  var authConfig = {
+        firebaseApp: firebase,
+        firebaseConfig: firebaseConfig,
+        authURL: '<auth-server-url>'
+      },
+      out = document.getElementById('out');
+  var auth = new FirebasePassportLogin(authConfig, function(error, user) {
+    if (error) {
+      // an error occurred while attempting login
+      console.log(error);
+      out.innerHTML = `Error:\n\n` + (error && JSON.stringify(error, 0, 2) || 'unknown');
+    } else if (user) {
+      // user authenticated with Firebase
+      var msg = `User ID: ${user.uid}  Provider: ${user.provider}`;
+      console.log('User ID: ' + user.uid + ', Provider: ' + user.provider);
+      console.log(user);
+      out.innerHTML = `${msg}\n\n` + JSON.stringify(user, 0, 2);
+    } else {
+      // user is logged out
+      console.log('User is logged out');
+      out.innerHTML = `User not logged in\n`
+    }
+  });
 
-            auth._getAnonymousUid();
-            
-        </script>
-    </head>
-    <body>
-      <button onclick="auth.login('google')">Login</button>
-      <button onclick="auth.logout()">Logout</button>
-    </body>
+</script>
+</body>
 </html>

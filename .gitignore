@@ -2,3 +2,7 @@ node_modules/
 server/services/*/config.js
 server/config.js
 examples/server/config.js
+auth-config.json
+Example.xml
+.idea/*
+yarn.lock

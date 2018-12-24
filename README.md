@@ -22,8 +22,20 @@ We've included proper security rules for using Firebase Passport Login under `/s
 
 ### 3. Include Firebase and Firebase Passport Login on our client
 
-    <script type='text/javascript' src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
     <script type='text/javascript' src='client/firebase-passport-login.js'></script>
+    <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.7.0/firebase-database.js"></script>
+    <script>
+      // Initialize Firebase
+      const firebaseConfig = {
+        apiKey: "<key>",
+        authDomain: "<host>",
+        databaseURL: "<url>",
+        projectId: "<project-id>"
+      };
+      firebase.initializeApp(firebaseConfig);
+    </script>
             
 ### 4. Create a new FirebasePassportLogin on your Client
 If you've used Firebase Simple Login, the next JavaScript snippet will look very familiar.
