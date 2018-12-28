@@ -1,11 +1,11 @@
 exports.setup = function(passport, config) {
   var TwitterStrategy = require('passport-twitter').Strategy;
 
-  passport.use(new TwitterStrategy({
+  passport.use(new TwitterStrategy(Object.assign({
       consumerKey: config.consumerKey,
       consumerSecret: config.consumerSecret,
       callbackURL: config.callbackURL
-    },
+    }, config.options || {}),
     function(accessToken, refreshToken, profile, done) {
       var user = {
         refreshToken: refreshToken || "",
