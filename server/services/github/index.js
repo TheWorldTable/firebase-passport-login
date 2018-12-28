@@ -1,12 +1,12 @@
 exports.setup = function (passport, config) {
     var GitHubStrategy = require('passport-github').Strategy;
 
-    passport.use(new GitHubStrategy({
+    passport.use(new GitHubStrategy(Object.assign({
         clientID: config.GITHUB_CLIENT_ID,
         clientSecret: config.GITHUB_CLIENT_SECRET,
         callbackURL: config.GITHUB_CALLBACK_URL,
         scope: config.GITHUB_SCOPE 
-      },
+      }, config.options || {}),
       function(accessToken, refreshToken, profile, done) {
             var user = {
                 refreshToken: refreshToken || "",

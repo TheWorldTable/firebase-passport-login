@@ -1,11 +1,11 @@
 exports.setup = function (passport, config) {
     var RedditStrategy = require('passport-reddit').Strategy;
 
-    passport.use(new RedditStrategy({
+    passport.use(new RedditStrategy(Object.assign({
         clientID: config.clientID,
         clientSecret: config.clientSecret,
         callbackURL: config.callbackURL
-      },
+      }, config.options || {}),
       function(accessToken, refreshToken, profile, done) {
             var user = {
                 refreshToken: refreshToken || "",

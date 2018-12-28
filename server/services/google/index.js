@@ -1,11 +1,11 @@
 exports.setup = function(passport, config) {
   var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
-  passport.use(new GoogleStrategy({
+  passport.use(new GoogleStrategy(Object.assign({
       clientID: config.clientID,
       clientSecret: config.clientSecret,
       callbackURL: config.callbackURL
-    },
+    }, config.options || {}),
     function(accessToken, refreshToken, profile, done) {
       var user = {
         refreshToken: refreshToken || "",
