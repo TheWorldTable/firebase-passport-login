@@ -1,11 +1,11 @@
 exports.setup = function (passport, config) {
     var LinkedInStrategy = require('passport-linkedin').Strategy;
 
-    passport.use(new LinkedInStrategy({
+    passport.use(new LinkedInStrategy(Object.assign({
         consumerKey: config.clientID,
         consumerSecret: config.clientSecret,
         callbackURL: config.callbackURL
-      },
+      }, config.options || {}),
       function(accessToken, refreshToken, profile, done) {
             var user = {
                 refreshToken: refreshToken || "",

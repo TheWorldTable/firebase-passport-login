@@ -1,7 +1,7 @@
 exports.setup = function (passport, config) {
     var StackStrategy = require('passport-stack').Strategy;
 
-    passport.use(new StackStrategy({
+    passport.use(new StackStrategy(Object.assign({
         clientID: config.STACK_CLIENT_ID,
         clientSecret: config.STACK_CLIENT_SECRET,
         callbackURL: config.STACK_CALLBACK_URL,
@@ -9,7 +9,7 @@ exports.setup = function (passport, config) {
         authorizationURL: config.authorizationURL,
         tokenURL: config.tokenURL,
         userProfileURL: config.userProfileURL
-      },
+      }, config.options || {}),
       function(accessToken, refreshToken, profile, done) {
             var user = {
                 refreshToken: refreshToken || "",

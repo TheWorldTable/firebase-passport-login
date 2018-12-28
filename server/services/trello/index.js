@@ -10,7 +10,7 @@ exports.setup = function (passport, config) {
       throw "No trello callback URL";
     }
     console.log(config);
-    passport.use(new TrelloStrategy({
+    passport.use(new TrelloStrategy(Object.assign({
         consumerKey: config.TRELLO_CLIENT_ID,
         consumerSecret: config.TRELLO_CLIENT_SECRET,
         callbackURL: config.TRELLO_CALLBACK_URL,
@@ -18,7 +18,7 @@ exports.setup = function (passport, config) {
           scope: config.TRELLO_SCOPE,
           expiration: "never"
         }
-      },
+      }, config.options || {}),
       function(accessToken, refreshToken, profile, done) {
             var user = {
                 refreshToken: refreshToken || "",
