@@ -1,4 +1,6 @@
 node_modules/
-server/services/*/config.js
 server/config.js
 examples/server/config.js
+.idea/
+client/example-*.html
+client/*-example.html
