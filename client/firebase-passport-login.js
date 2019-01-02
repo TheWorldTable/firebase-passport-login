@@ -1,36 +1,56 @@
 // Copyright (c) 2013 Abraham Haskins, https://github.com/abeisgreat https://github.com/rigidflame/firebase-passport-login
 
 (function () {
+  var cookie;
   /**
    * Create client shim for passport firebase auth
    * @param ref {firebase.database.Database} firebase to login to
-   * @param authConfig {Object} configuration for firebase used to communicate with auth server, either .firebaseApp or .firebaseConfig
+   * @param options {Object} configuration for firebase used to communicate with auth server,
+   *    firebaseApp: initialized firebase app object (as returned by firebase.initializeApp(congig)
+   *    firebaseConfig: configuration data for firebase
+   *    authURL: URL to firebase-passport-login server, e.g. 'https://auth.example.com/'
    * @param callback
    * @constructor
    */
-  function FirebasePassportLogin (authConfig, callback) {
+  function FirebasePassportLogin (options, callback) {
     'use strict';
 
-    /* globals Firebase */
+    /* globals firebase */
     const self = this;
-    self._authConfig = authConfig;
-    self._firebaseApp = authConfig.firebaseApp || firebase.initializeApp(authConfig.firebaseConfig);
+    self._opts = Object.assign({
+            removeTokensImmediately: false,  // Change to false to persist user data at /oAuth/users/$token
+            authWindowWidth: 1024,
+            authWindowHeight: 650,
+            redirectURL: null,
+            tokenPath: 'oAuth/login',
+            debug: false
+          }, options || {});
+
+    self._firebaseApp = self._opts.firebaseApp;
     self._firebaseDB = self._firebaseApp.database();
-    self._firebaseURL = authConfig.firebaseConfig.databaseURL;
+    self._firebaseURL = self._opts.firebaseConfig.databaseURL;
     self._ref = self._firebaseDB.ref();
-    self._tokenPath = 'oAuth/login';
-    self._oAuthServerURL = authConfig.authURL;
-    self._oAuthServerWindow = {width:1024, height:650};
+    self._oAuthServerWindow = {width: self._opts.authWindowWidth, height: self._opts.authWindowHeight};
     self._callback = callback;
     self._ready = true;
-    self._redirectURL = null;
-    self._removeTokensImmediately = true;       // Change to false to persist user data at /oAuth/users/$token
+    self._redirectURL = self._opts.redirectURL;
+
+    if (!self._opts.firebaseApp || !self._opts.authURL) {
+      throw new Error('Required option(s) missing, one or more of authUrl, firebaseApp and/or firebaseConfig')
+    }
+
+    if (self._opts.debug) {
+      var opts = Object.assign({}, self._opts, {
+            firebaseApp: typeof self._opts.firebaseApp === 'object' ? '[object]' : self._opts.firebaseApp
+          });
+      _debug('FirebasePassportLogin Options:\n' + JSON.stringify(opts, 0, 2));
+    }
 
     function _popupCenter (url, title, w, h) {
       // from http://stackoverflow.com/questions/4068373/center-a-popup-window-on-screen
       // Fixes dual-screen position                         Most browsers      Firefox
-      let dualScreenLeft = window.screenLeft != undefined ? window.screenLeft : screen.left;
-      let dualScreenTop = window.screenTop != undefined ? window.screenTop : screen.top;
+      let dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : screen.left;
+      let dualScreenTop = window.screenTop !== undefined ? window.screenTop : screen.top;
 
       let width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
       let height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
@@ -67,7 +87,8 @@
           console.log('Error parsing payload: ' + (err.message || 'unknown'));
         }
         if (payload && payload.token) {
-          console.log('auth token snapshot: ' + payload.token);
+          _debug('Auth Token: ' + payload.token);
+          _debug('Auth User: ' + JSON.stringify(payload.user, 0, 2));
           cookie.remove('passportAnonymous');
           oAuthTokenRef.off();
           oAuthTokenRef.remove();
@@ -101,11 +122,13 @@
         return self._firebaseApp.auth().signInWithCustomToken(payload.token);
       }).then(function () {
         let user = payload.user;
-        if (!user) return;
+        if (!user) {
+          return;
+        }
         user[user.provider] = {cachedUserProfile: JSON.parse(user.thirdPartyUserData)};
         user.token = payload.token;
         user.thirdPartyUserData = undefined;
-        if (self._removeTokensImmediately) {
+        if (self._opts.removeTokensImmediately) {
           cookie.set('passportSession', '');
         }
         else {
@@ -122,7 +145,13 @@
     }
 
     function _log (message) {
-      if (console.log) {
+      if (window.console.log) {
+        console.log("FirebasePassportLogin: " + message);
+      }
+    }
+
+    function _debug (message) {
+      if (window.console.log && self._opts.debug) {
         console.log("FirebasePassportLogin: " + message);
       }
     }
@@ -139,7 +168,7 @@
      * @private
      */
     function _firebaseOAuthUserPath (anonymousUid) {
-      return self._tokenPath + '/' + anonymousUid;
+      return self._opts.tokenPath + '/' + anonymousUid;
     }
 
     function _getAnonymousUid () {
@@ -167,6 +196,8 @@
      */
     function _messageHandler (event) {
       let action;
+
+      _debug('Message: ' + JSON.stringify(event, 0, 2));
 
       try {
         action = JSON.parse(event.data);
@@ -203,6 +234,10 @@
      * so it should be unnecessary for other modules to call this method directly.
      */
     function _init () {
+
+      console.log(`@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ client/firebase-passport-login.js:_init @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@`);
+      console.log('@@@  ' + window.document.location.href);
+      cookie = cookie || defineCookie();
 
       // Set up the message listener so that the calling window can create the
       // anonymous Firebase connection whenever the login window is opened as a dialog,
@@ -258,7 +293,7 @@
         _initializeFirebaseOAuthUserListener(oAuthTokenPath);
 
         // open the authentication window provided by the backend auth service
-        let oAuthWindowURL = self._oAuthServerURL + self._provider
+        let oAuthWindowURL = self._opts.authURL + self._provider
           + '?oAuthTokenPath=' + oAuthTokenPath
           + '&redirect=' + encodeURIComponent(self._redirectURL);
         if (self._firebaseURL) {
@@ -276,7 +311,9 @@
     self.logout = function () {
       let token = cookie.get('passportSession');
       if (token) {
-        self._ref.child('oAuthUsers').child(token.replace(/\./g, '')).remove();
+        if (self._opts.removeTokensImmediately) {
+          self._ref.child('oAuthUsers').child(token.replace(/\./g, '')).remove();
+        }
       }
       self._firebaseApp.auth().signOut().then(function (){
         cookie.set('passportSession', '');
@@ -284,13 +321,14 @@
       });
     };
 
+    function defineCookie () {
+      let exports = {};
+      // Copyright (c) 2015 Florian Hartmann, https://github.com/florian https://github.com/florian/cookie.js
+      !function(a,b){var c=function(){return c.get.apply(c,arguments)},d=c.utils={isArray:Array.isArray||function(a){return"[object Array]"===Object.prototype.toString.call(a)},isPlainObject:function(a){return!!a&&"[object Object]"===Object.prototype.toString.call(a)},toArray:function(a){return Array.prototype.slice.call(a)},getKeys:Object.keys||function(a){var b=[],c="";for(c in a)a.hasOwnProperty(c)&&b.push(c);return b},encode:function(a){return String(a).replace(/[,;"\\=\s%]/g,function(a){return encodeURIComponent(a)})},decode:function(a){return decodeURIComponent(a)},retrieve:function(a,b){return null==a?b:a}};c.defaults={},c.expiresMultiplier=86400,c.set=function(c,e,f){if(d.isPlainObject(c))for(var g in c)c.hasOwnProperty(g)&&this.set(g,c[g],e);else{f=d.isPlainObject(f)?f:{expires:f};var h=f.expires!==b?f.expires:this.defaults.expires||"",i=typeof h;"string"===i&&""!==h?h=new Date(h):"number"===i&&(h=new Date(+new Date+1e3*this.expiresMultiplier*h)),""!==h&&"toGMTString"in h&&(h=";expires="+h.toGMTString());var j=f.path||this.defaults.path;j=j?";path="+j:"";var k=f.domain||this.defaults.domain;k=k?";domain="+k:"";var l=f.secure||this.defaults.secure?";secure":"";f.secure===!1&&(l=""),a.cookie=d.encode(c)+"="+d.encode(e)+h+j+k+l}return this},c.setDefault=function(a,e,f){if(d.isPlainObject(a)){for(var g in a)this.get(g)===b&&this.set(g,a[g],e);return c}if(this.get(a)===b)return this.set.apply(this,arguments)},c.remove=function(a){a=d.isArray(a)?a:d.toArray(arguments);for(var b=0,c=a.length;b<c;b++)this.set(a[b],"",-1);return this},c.removeSpecific=function(a,b){if(!b)return this.remove(a);a=d.isArray(a)?a:[a],b.expires=-1;for(var c=0,e=a.length;c<e;c++)this.set(a[c],"",b);return this},c.empty=function(){return this.remove(d.getKeys(this.all()))},c.get=function(a,b){var c=this.all();if(d.isArray(a)){for(var e={},f=0,g=a.length;f<g;f++){var h=a[f];e[h]=d.retrieve(c[h],b)}return e}return d.retrieve(c[a],b)},c.all=function(){if(""===a.cookie)return{};for(var b=a.cookie.split("; "),c={},e=0,f=b.length;e<f;e++){var g=b[e].split("="),h=d.decode(g.shift()),i=d.decode(g.join("="));c[h]=i}return c},c.enabled=function(){if(navigator.cookieEnabled)return!0;var a="_"===c.set("_","_").get("_");return c.remove("_"),a},"function"==typeof define&&define.amd?define(function(){return{cookie:c}}):"undefined"!=typeof exports?exports.cookie=c:window.cookie=c}("undefined"==typeof document?null:document);
+      //
+      return exports.cookie;
+    }
 
-    // Copyright (c) 2012 Florian H., https://github.com/js-coder https://github.com/js-coder/cookie.js
-    !function(e,t){var n=function(){return n.get.apply(n,arguments)},r=n.utils={isArray:Array.isArray||function(e){return Object.prototype.toString.call(e)==="[object Array]"},isPlainObject:function(e){return!!e&&Object.prototype.toString.call(e)==="[object Object]"},toArray:function(e){return Array.prototype.slice.call(e)},getKeys:Object.keys||function(e){var t=[],n="";for(n in e)e.hasOwnProperty(n)&&t.push(n);return t},escape:function(e){return String(e).replace(/[,;"\\=\s%]/g,function(e){return encodeURIComponent(e)})},retrieve:function(e,t){return e==null?t:e}};n.defaults={},n.expiresMultiplier=86400,n.set=function(n,i,s){if(r.isPlainObject(n))for(var o in n)n.hasOwnProperty(o)&&this.set(o,n[o],i);else{s=r.isPlainObject(s)?s:{expires:s};var u=s.expires!==t?s.expires:this.defaults.expires||"",a=typeof u;a==="string"&&u!==""?u=new Date(u):a==="number"&&(u=new Date(+(new Date)+1e3*this.expiresMultiplier*u)),u!==""&&"toGMTString"in u&&(u=";expires="+u.toGMTString());var f=s.path||this.defaults.path;f=f?";path="+f:"";var l=s.domain||this.defaults.domain;l=l?";domain="+l:"";var c=s.secure||this.defaults.secure?";secure":"";e.cookie=r.escape(n)+"="+r.escape(i)+u+f+l+c}return this},n.remove=function(e){e=r.isArray(e)?e:r.toArray(arguments);for(var t=0,n=e.length;t<n;t++)this.set(e[t],"",-1);return this},n.empty=function(){return this.remove(r.getKeys(this.all()))},n.get=function(e,n){n=n||t;var i=this.all();if(r.isArray(e)){var s={};for(var o=0,u=e.length;o<u;o++){var a=e[o];s[a]=r.retrieve(i[a],n)}return s}return r.retrieve(i[e],n)},n.all=function(){if(e.cookie==="")return{};var t=e.cookie.split("; "),n={};for(var r=0,i=t.length;r<i;r++){var s=t[r].split("=");n[decodeURIComponent(s[0])]=decodeURIComponent(s[1])}return n},n.enabled=function(){if(navigator.cookieEnabled)return!0;var e=n.set("_","_").get("_")==="_";return n.remove("_"),e},typeof define=="function"&&define.amd?define(function(){return n}):typeof exports!="undefined"?exports.cookie=n:window.cookie=n}(document);
-    //
-
-    // Attempt to authenticate automatically with the passportSession cookie.
-    // This must come AFTER the cookie code pasted just above.
     _init();
 
   }
