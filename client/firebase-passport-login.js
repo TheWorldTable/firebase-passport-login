@@ -208,13 +208,15 @@
 
       if (action && action.type === 'init') {
 
-        //console.log({event: event}, 'Received FirebasePassportLogin initialization request from parent window');
+        console.log({event: event}, 'Received FirebasePassportLogin initialization request from parent window');
 
-        if (action.redirect) {
+        if (action.redirect && self._redirectURL !== action.redirect) {
           self._redirectURL = action.redirect;
+
+          // don't call this too much or firebase throttling with cause failure
+          self.startAnonymousAuthConnection();
         }
 
-        self.startAnonymousAuthConnection();
       }
 
     }
