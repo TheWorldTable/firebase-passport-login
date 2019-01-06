@@ -208,9 +208,12 @@
 
       if (action && action.type === 'init') {
 
-        console.log({event: event}, 'Received FirebasePassportLogin initialization request from parent window');
 
         if (action.redirect && self._redirectURL !== action.redirect) {
+          if (window.console) {
+            console.log({event: event}, 'Received FirebasePassportLogin initialization request from parent window');
+          }
+
           self._redirectURL = action.redirect;
 
           // don't call this too much or firebase throttling with cause failure
@@ -256,7 +259,9 @@
       let curUser = self._firebaseApp.auth().currentUser;
       if (curUser) {
         console.log({curUser: curUser}, 'FirebasePassportLogin._init()');
-        self._callback(null, {token: curUser.getIdToken(), provider: curUser.providerData, uid: curUser.uid});
+        Promise.resolve(curUser && curUser.getIdToken()).then(function (token) {
+          self._callback(null, {token: token, provider: curUser.providerData, uid: curUser.uid});
+        });
       }
       //alert('passportSession = ' + cookie.get('passportSession'));
       window.addEventListener('message', _messageHandler);
