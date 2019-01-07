@@ -6,3 +6,5 @@ auth-config.json
 Example.xml
 .idea/*
 yarn.lock
+.DS_Store
+client/example-*.html
