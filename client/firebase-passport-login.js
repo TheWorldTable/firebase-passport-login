@@ -4,12 +4,16 @@
   var cookie;
   /**
    * Create client shim for passport firebase auth
-   * @param ref {firebase.database.Database} firebase to login to
-   * @param options {Object} configuration for firebase used to communicate with auth server,
-   *    firebaseApp: initialized firebase app object (as returned by firebase.initializeApp(congig)
-   *    firebaseConfig: configuration data for firebase
-   *    authURL: URL to firebase-passport-login server, e.g. 'https://auth.example.com/'
-   * @param callback
+   * @param {Object} options - configuration for firebase used to communicate with auth server,
+   *   @param {firebase.database.Database} options.firebaseApp - initialized firebase app object (as returned by firebase.initializeApp(congig)
+   *   @param {String} options.authURL - URL to auth server
+   *   @param {String=} options.redirectURL - configuration data for firebase
+   *   @param {String} options.tokenPath - firebase path to token
+   *   @param {Boolean=true} options.removeTokensImmediately - delete tokes right after use
+   *   @param {Function|Boolean=false} options.debug - turn on/off logging
+   *   @param {Number=1024} options.authWindowWidth - width of popup window
+   *   @param {Number=650} options.authWindowHeight - height of popup window
+   * @param {Function} callback
    * @constructor
    */
   function FirebasePassportLogin (options, callback) {
@@ -77,14 +81,14 @@
       let oAuthTokenRef = self._ref.child(oAuthTokenPath);
 
       cookie.set('passportAnonymous', self._anonymousUid, {secure: document.location.href.indexOf('https') === 0});
-      console.log('listening for firebase auth token at ' + oAuthTokenRef.toString());
+      _debug('listening for firebase auth token at ' + oAuthTokenRef.toString());
       oAuthTokenRef.on('value', function (snapshot) {
         let payloadJSON = snapshot.val(),
             payload;
         try {
           payload = JSON.parse(payloadJSON);
         } catch (err) {
-          console.log('Error parsing payload: ' + (err.message || 'unknown'));
+          _debug('Error parsing payload: ' + (err.message || 'unknown'));
         }
         if (payload && payload.token) {
           _debug('Auth Token: ' + payload.token);
@@ -109,7 +113,9 @@
      * Authenticate to Firebase with the custom token obtained through OAuth and store it as a
      * `passportSession` cookie. Then call the user-provided callback method with the user object.
      *
-     * @param token - Passport session token
+     * @param {Object} payload - firebase v3 SDK auth response
+     *   @param {String} payload.token - Passport session token
+     *   @param {Object} payload.user - User data
      * @private
      */
     function _getUserForTokenAndSaveSession (payload) {
@@ -144,15 +150,18 @@
 
     }
 
-    function _log (message) {
-      if (window.console.log) {
-        console.log("FirebasePassportLogin: " + message);
-      }
-    }
-
+    /**
+     * Output debug info
+     * @private
+     * @param {...*} message
+     */
     function _debug (message) {
-      if (window.console.log && self._opts.debug) {
-        console.log("FirebasePassportLogin: " + message);
+      if (self._opts.debug) {
+        if (typeof self._opts.debug === 'function') {
+          self._opts.debug.apply(this, Array.from(arguments))
+        } else if (window.console) {
+          console.log.apply(console, Array.from(arguments));
+        }
       }
     }
 
@@ -203,23 +212,12 @@
         action = JSON.parse(event.data);
       } catch (err) {
         // couldn't parse the event data -- must have been a message not intended for us
-        //console.log({err:err, 'event.data': event.data, status: 'Error handling event'}, '_messageHandler');
       }
 
       if (action && action.type === 'init') {
-
-
         if (action.redirect && self._redirectURL !== action.redirect) {
-          if (window.console) {
-            console.log({event: event}, 'Received FirebasePassportLogin initialization request from parent window');
-          }
-
           self._redirectURL = action.redirect;
-
-          // don't call this too much or firebase throttling with cause failure
-          self.startAnonymousAuthConnection();
         }
-
       }
 
     }
@@ -240,8 +238,8 @@
      */
     function _init () {
 
-      console.log(`@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ client/firebase-passport-login.js:_init @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@`);
-      console.log('@@@  ' + window.document.location.href);
+      _debug(`client/firebase-passport-login.js:_init: ${window.document.location.href}`);
+
       cookie = cookie || defineCookie();
 
       // Set up the message listener so that the calling window can create the
@@ -258,12 +256,12 @@
 
       let curUser = self._firebaseApp.auth().currentUser;
       if (curUser) {
-        console.log({curUser: curUser}, 'FirebasePassportLogin._init()');
+        _debug({curUser: curUser}, 'FirebasePassportLogin._init()');
         Promise.resolve(curUser && curUser.getIdToken()).then(function (token) {
           self._callback(null, {token: token, provider: curUser.providerData, uid: curUser.uid});
         });
       }
-      //alert('passportSession = ' + cookie.get('passportSession'));
+      _debug('passportSession = ' + cookie.get('passportSession'));
       window.addEventListener('message', _messageHandler);
     }
 
