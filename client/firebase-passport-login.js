@@ -267,7 +267,6 @@
       }
       _debug('passportSession = ' + cookie.get('passportSession'));
       window.addEventListener('message', _messageHandler);
-      setTimeout(self.startAnonymousAuthConnection, 50);
     }
 
     /**
