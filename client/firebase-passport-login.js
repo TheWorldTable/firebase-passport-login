@@ -222,12 +222,16 @@
 
     }
 
-    self.startAnonymousAuthConnection = function () {
-      return _getAnonymousUid()
-        .then(function (uid) {
-          self._anonymousUid = uid;
-        })
-        .catch(console.error);
+    self.startAnonymousAuthConnection = function (forceAnonymousReauth) {
+      if (!forceAnonymousReauth && self._anonymousUid) {
+        return Promise.resolve(self._anonymousUid);
+      }
+      return _getAnonymousUid().then(function (uid) {
+        self._anonymousUid = uid;
+        return uid;
+      }).catch(function (err) {
+        console.error(err);
+      });
     };
 
     /**
@@ -263,6 +267,7 @@
       }
       _debug('passportSession = ' + cookie.get('passportSession'));
       window.addEventListener('message', _messageHandler);
+      setTimeout(self.startAnonymousAuthConnection, 50);
     }
 
     /**
@@ -285,29 +290,29 @@
       // Have to open the authentication window immediately in order to avoid popup blockers
 
       self._provider = provider;
+      // to prevent popup blockers, we should already have an anonymous uid
+      if (self._anonymousUid) {
+        return self._login();
+      } else {
+        return _getAnonymousUid().then(self._login);
+      }
+    };
 
-      Promise.resolve(self._anonymousUid).then(function (uid) {
-        if (uid) {
-          return uid;
-        }
-        // user isn't anonymously authed, do so now
-        return _getAnonymousUid();
-      }).then(function (uid) {
-        // set up a Firebase listener to get the user object set by the backend auth service
-        let oAuthTokenPath = _firebaseOAuthUserPath(uid);
-        _initializeFirebaseOAuthUserListener(oAuthTokenPath);
+    self._login = function () {
+      // set up a Firebase listener to get the user object set by the backend auth service
+      let oAuthTokenPath = _firebaseOAuthUserPath(self._anonymousUid);
+      _initializeFirebaseOAuthUserListener(oAuthTokenPath);
 
-        // open the authentication window provided by the backend auth service
-        let oAuthWindowURL = self._opts.authURL + self._provider
-          + '?oAuthTokenPath=' + oAuthTokenPath
-          + '&redirect=' + encodeURIComponent(self._redirectURL);
-        if (self._firebaseURL) {
-          oAuthWindowURL += '&firebaseURL=' + encodeURIComponent(self._firebaseURL);
-        }
-        self._oAuthWindow = _popupCenter(oAuthWindowURL, '_blank',
-          self._oAuthServerWindow.width,
-          self._oAuthServerWindow.height);
-      });
+      // open the authentication window provided by the backend auth service
+      let oAuthWindowURL = self._opts.authURL + self._provider
+        + '?oAuthTokenPath=' + oAuthTokenPath
+        + '&redirect=' + encodeURIComponent(self._redirectURL);
+      if (self._firebaseURL) {
+        oAuthWindowURL += '&firebaseURL=' + encodeURIComponent(self._firebaseURL);
+      }
+      self._oAuthWindow = _popupCenter(oAuthWindowURL, '_blank',
+        self._oAuthServerWindow.width,
+        self._oAuthServerWindow.height);
     };
 
     /**
