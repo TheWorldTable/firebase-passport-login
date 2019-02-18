@@ -27,9 +27,12 @@
             authWindowHeight: 650,
             redirectURL: null,
             tokenPath: 'oAuth/login',
+            forceAnonymousReauth: false,  // don't reuse existing an anonymous auth ID
+            preserveAuth: true,          // if user is authed non-anonymously, preserve it at the cost of popup blockers blocking oauth login
             debug: false
           }, options || {});
 
+    self._opts.debug = self._opts.debug || (function (ls) {try{return ls && ls['firebase-passport-login-debug-mode'] || false;}catch(e){}return false;})(window.localStorage);
     self._firebaseApp = self._opts.firebaseApp;
     self._firebaseDB = self._firebaseApp.database();
     self._firebaseURL = self._opts.firebaseConfig.databaseURL;
@@ -44,6 +47,7 @@
     }
 
     if (self._opts.debug) {
+      window.firebasePassportLoginObject = self;
       var opts = Object.assign({}, self._opts, {
             firebaseApp: typeof self._opts.firebaseApp === 'object' ? '[object]' : self._opts.firebaseApp
           });
@@ -180,19 +184,19 @@
       return self._opts.tokenPath + '/' + anonymousUid;
     }
 
-    function _getAnonymousUid () {
-
-      return self._firebaseApp.auth().signOut().then(function () {
-          return self._firebaseApp.auth().signInAnonymously();
-      }).then(function (authData) {
-        let user = authData.user;
-        if (user) {
-          return user.uid;
-        }
+    /**
+     * programmatically force a reauth, only call if logging out a user is ok, normally don't need to do this explicitly, it will be done if needed in init
+     * @returns {Promise<firebase.auth.UserCredential | never>}
+     */
+    self.forceAnonymousReauth = function () {
+      return self._firebaseApp.auth().signInAnonymously().then(function (data) {
+        self._anonymousUid = data.user.uid;
+        self._currentUser = data.user;
       }).catch(function (err) {
         throw new Error("Anonymous login failed. Make sure Anonymous login is enabled in your Firebase");
       });
-    }
+    };
+
 
     /**
      * To re-establish an anonymous connection to the database prior to calling login,
@@ -223,17 +227,25 @@
     }
 
     self.startAnonymousAuthConnection = function (forceAnonymousReauth) {
-      if (!forceAnonymousReauth && self._anonymousUid) {
-        return Promise.resolve(self._anonymousUid);
-      }
-      return _getAnonymousUid().then(function (uid) {
-        self._anonymousUid = uid;
-        return uid;
-      }).catch(function (err) {
-        console.error(err);
-      });
+      // no longer needed, use forceAnonymousReauth method if needed otherwise anonmous auth is handle automatically
+      // based on the preserveAuth and forceAnonymousReauth options
     };
 
+    /**
+     * handle auth change notifications
+     * @param user
+     * @returns {Promise<firebase.auth.UserCredential|never>}
+     * @private
+     */
+    function _tokenChangeHandler (user) {
+      _debug('firebase-passport-login idTokenChange user=' + (!user ? 'n/a' : ((user.isAnonymous ? 'anonymous' : 'non-anonymous') + ' uid=' + user.uid)));
+      self._currentUser = user;
+      if (user && user.isAnonymous) {
+        self._anonymousUid = user.uid;
+      } else if (!self._opts.preserveAuth || !user) {
+        return self.forceAnonymousReauth();
+      }
+    }
     /**
      * Initialize
      *
@@ -267,6 +279,17 @@
       }
       _debug('passportSession = ' + cookie.get('passportSession'));
       window.addEventListener('message', _messageHandler);
+
+      // an anonymous uid is need for login but we only need to get one if the user is not logged in or has a current non-anonymous login
+      Promise.resolve().then(function () {
+        // force a reauth if requested
+        if (self._opts.forceAnonymousReauth) {
+          return self.forceAnonymousReauth();
+        }
+      }).then(function () {
+        // see what the auth status is and handle according to the preserveAuth option if not
+        self._tokenChangeUnsubscribe = self._firebaseApp.auth().onIdTokenChanged(_tokenChangeHandler);
+      });
     }
 
     /**
@@ -288,12 +311,14 @@
 
       // Have to open the authentication window immediately in order to avoid popup blockers
 
+      _debug('Login with ' + provider + ' being attempted with uid "' + (self._anonymousUid || 'n/a') + '"');
       self._provider = provider;
       // to prevent popup blockers, we should already have an anonymous uid
       if (self._anonymousUid) {
         return self._login();
       } else {
-        return _getAnonymousUid().then(self._login);
+        // a popup blocker will probably block login unless you are whitelisted
+        return self.forceAnonymousReauth().then(self._login);
       }
     };
 
