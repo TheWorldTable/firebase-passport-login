@@ -1,6 +1,6 @@
 {
   "name": "firebase-passport-login",
-  "version": "0.1.0",
+  "version": "3.1.0",
   "description": "Use Express Passport libraries with Firebase",
   "main": "server/router.js",
   "directories": {

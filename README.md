@@ -1,13 +1,9 @@
 ### TODO: Update instructions to reflect changes made in this fork
 
-FirebasePassportLogin (Beta!)
+FirebasePassportLogin WORLD TABLE SDK v3 FORK aka AUTH-3
 =======================
 
 Use [Express](http://expressjs.com/)'s [Passport](http://passportjs.org/) middleware authentication libraries with Firebase to authenticate users with an interface identical to Firebase Simple Login for over 100 different providers.
-
-Although Firebase Passport Login only comes with three example integrations (Reddit, Foursquare, and LinkedIn login), it is extremely easy to add any provider with a Passport library. See below for how to go about adding more services. 
-
-**Do not use Firebase Passport Login in production yet! We are still doing a lot of testing for stability and security. A production ready version is coming soon!**
 
 Getting Started
 ---
@@ -15,7 +11,7 @@ Getting Started
 ### 1. Set up Anonymous Login in your Firebase
 Open your Firebase in a browser and navigating to Simple Login tab. Then click "Anonymous" and make sure "Enabled" is checked.
 
-*Note: Firebase Passport Login uses Anonymous login interally to create a secure communication line between a Firebase Passport Login client and server.* 
+*Note: Firebase Passport Login uses Anonymous login internally to create a secure communication line between a Firebase Passport Login client and server.* 
 
 ### 2. Set up the Security Rules in your Firebase
 We've included proper security rules for using Firebase Passport Login under `/server/security-rules.json`, make sure to apply these to your Firebase. This is extremely important for keeping user tokens secure!
