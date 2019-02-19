@@ -1,6 +1,11 @@
 node_modules/
+server/services/*/config.js
 server/config.js
 examples/server/config.js
-.idea/
+auth-config.json
+Example.xml
+.idea/*
+yarn.lock
+.DS_Store
 client/example-*.html
 client/*-example.html
