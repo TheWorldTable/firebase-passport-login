@@ -21,6 +21,7 @@
 
     /* globals firebase */
     const self = this;
+    var debugMode = false;
     self._opts = Object.assign({
             removeTokensImmediately: false,  // Change to false to persist user data at /oAuth/users/$token
             authWindowWidth: 1024,
@@ -32,7 +33,13 @@
             debug: false
           }, options || {});
 
-    self._opts.debug = self._opts.debug || (function (ls) {try{return ls && ls['firebase-passport-login-debug-mode'] || false;}catch(e){}return false;})(window.localStorage);
+    try {
+      debugMode = window.localStorage && localStorage['firebase-passport-login-debug-mode'];
+    } catch (e) {
+      // When chrome has 3rd party cookies disabled, even reading localStorage causes an exception
+    }
+
+    self._opts.debug = self._opts.debug || debugMode;
     self._firebaseApp = self._opts.firebaseApp;
     self._firebaseDB = self._firebaseApp.database();
     self._firebaseURL = self._opts.firebaseConfig.databaseURL;
