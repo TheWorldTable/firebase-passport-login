@@ -37,7 +37,7 @@
     "passport": "~0.4.0",
     "passport-disqus": "^0.1.3",
     "passport-facebook": "^2.0.0",
-    "passport-google-oauth": "^1.0.0",
+    "passport-google-oauth": "https://github.com/TheWorldTable/passport-google-oauth",
     "passport-twitter": "^1.0.3"
   },
   "devDependencies": {
